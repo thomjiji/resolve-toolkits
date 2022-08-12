@@ -24,6 +24,5 @@ if __name__ == "__main__":
                 "endFrame": 23,
             }
 
-            if mediaPool.AppendToTimeline([ subClip ]):
+            if mediaPool.AppendToTimeline([subClip]):
                 print("added subclip (first 24 frames) of \"" + clip.GetName() + "\" to current timeline.")
-
