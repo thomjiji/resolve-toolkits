@@ -38,7 +38,6 @@ for count, sub_folder in enumerate(root_folder.GetSubFolderList()):
         break
     all_clips.append(media_storage.AddItemListToMediaPool(sub_folders_full_path[count]))
 
-# Get the fps data of a clip in a specific camera directory
 for sub_folder in root_folder.GetSubFolderList():
     # 排除 _Timeline 这个 Bin
     if sub_folder.GetName() == "_Timeline":
@@ -50,7 +49,7 @@ for sub_folder in root_folder.GetSubFolderList():
         clip_width: int = int(clip.GetClipProperty()["Resolution"].split("x")[0])
         clip_height: int = int(clip.GetClipProperty()["Resolution"].split("x")[1])
         if clip_height == 1080:
-            timeline_name = f"{sub_folder_name}_{clip_width}x{clip_height}"
+            timeline_name = f"{sub_folder_name}_{str(clip_width)}x{str(clip_height)}"
             project.SetSetting("timelineResolutionWidth", str(clip_width))
             project.SetSetting("timelineResolutionHeight", str(clip_height))
             media_pool.SetCurrentFolder("_Timeline")
@@ -58,7 +57,7 @@ for sub_folder in root_folder.GetSubFolderList():
             for clip in sub_folder.GetClipList():
                 media_pool.AppendToTimeline(clip)
         elif clip_width > 1080:
-            timeline_name = f"{sub_folder_name}_{clip_width / 2}x{clip_height / 2}"
+            timeline_name = f"{sub_folder_name}_{str(int(clip_width / 2))}x{str(int(clip_height / 2))}"
             project.SetSetting("timelineResolutionWidth", str(clip_width / 2))
             project.SetSetting("timelineResolutionHeight", str(clip_height / 2))
             media_pool.SetCurrentFolder("_Timeline")
