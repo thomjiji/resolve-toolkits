@@ -3,9 +3,6 @@ from python_get_resolve import GetResolve
 from typing import List, Union
 import sys
 
-# testing
-sys.argv[1] = '/Users/thom/Movies/Videos/Footages/悠长假期'
-
 media_path: str = sys.argv[1]
 
 resolve = GetResolve()
@@ -38,12 +35,39 @@ for count, sub_folder in enumerate(root_folder.GetSubFolderList()):
     media_pool.SetCurrentFolder(sub_folder)
     all_clips.append(media_storage.AddItemListToMediaPool(sub_folders_full_path[count]))
 
-# Get FPS info of all the shots that have been imported into the media pool.
-for camera in all_clips:
-    for clip in camera:
-        print(clip.GetClipProperty()["FPS"])
+# # Get FPS info of all the shots that have been imported into the media pool.
+# FPS_list = []
+# for camera in all_clips:
+#     for clip in camera:
+#         FPS_list.append(clip.GetClipProperty()["FPS"])
+# FPS_list = list(dict.fromkeys(FPS_list))
 
-project.SetSetting("timelineFrameRate", "25")
-project.SetSetting("timelineResolutionWidth", "3840")
-project.SetSetting("timelineResolutionHeight", "2160")
-media_pool.CreateTimelineFromClips("tmp", [all_clips[0][0], all_clips[0][1]])
+# Get the fps data of a clip in a specific camera directory
+for sub_folder in root_folder.GetSubFolderList():
+    FPS_list_camera = []
+    for clip in sub_folder.GetClipList():
+        FPS_list_camera.append(clip.GetClipProperty()["FPS"])
+    FPS_list_camera = list(dict.fromkeys(FPS_list_camera))
+    sub_folder_name = sub_folder.GetName()
+    if len(FPS_list_camera) == 1:
+        project.SetSetting("timelineResolutionWidth", "1920")
+        project.SetSetting("timelineResolutionHeight", "1080")
+        project.SetSetting("timelineFrameRate", str(FPS_list_camera[0]).split(".")[0])
+        media_pool.CreateEmptyTimeline(sub_folder_name)
+        for clip in sub_folder.GetClipList():
+            media_pool.AppendToTimeline(clip)
+    else:
+        for i in FPS_list_camera:
+            project.SetSetting("timelineResolutionWidth", "1920")
+            project.SetSetting("timelineResolutionHeight", "1080")
+            project.SetSetting("timelineFrameRate", str(i).split(".")[0])
+            media_pool.CreateEmptyTimeline(f"{sub_folder_name}_{str(i).split('.')[0]}")
+            for clip in sub_folder.GetClipList():
+                media_pool.AppendToTimeline(clip)
+
+
+# for index, fps in enumerate(FPS_list):
+#     project.SetSetting("timelineFrameRate", fps)
+#     project.SetSetting("timelineResolutionWidth", "1920")
+#     project.SetSetting("timelineResolutionHeight", "1080")
+#     media_pool.CreateTimelineFromClips(sub_folder_name[index], [all_clips[0][0], all_clips[0][1]])
