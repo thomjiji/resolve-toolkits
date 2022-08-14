@@ -49,37 +49,38 @@ for sub_folder in root_folder.GetSubFolderList():
     # for clip in sub_folder.GetClipList():
     #     clip_name_list.append(clip.GetName())
     # clip_name_list.sort()
-    if sub_folder.GetName() == "Ronin_4D#2":
 
-        times = 0
-        for clip in sub_folder.GetClipList():
-            clip_width: int = int(clip.GetClipProperty()["Resolution"].split("x")[0])
-            clip_height: int = int(clip.GetClipProperty()["Resolution"].split("x")[1])
-            if clip_height == 1080:
-                timeline_name = f"{sub_folder_name}_{str(clip_width)}x{str(clip_height)}"
-                media_pool.SetCurrentFolder("_Timeline")
-                media_pool.CreateEmptyTimeline(timeline_name)
-                project.SetCurrentTimeline(timeline_name)
-                current_timeline = project.GetCurrentTimeline()
-                current_timeline.SetSetting("useCustomSettings", "1")
-                current_timeline.SetSetting("timelineResolutionWidth", str(int(clip_width)))
-                current_timeline.SetSetting("timelineResolutionHeight", str(int(clip_height)))
-                current_timeline.SetSetting("timelineFrameRate", str(float(25)))
-                media_pool.AppendToTimeline(clip)
-            elif clip_width > 1080:
-                timeline_name = f"{sub_folder_name}_{str(int(clip_width / 2))}x{str(int(clip_height / 2))}"
-                media_pool.SetCurrentFolder("_Timeline")
-                media_pool.CreateEmptyTimeline(timeline_name)
-                current_timeline = project.GetCurrentTimeline()
-                print(current_timeline.GetName())
-                current_timeline.SetSetting("useCustomSettings", "1")
-                current_timeline.SetSetting("timelineResolutionWidth", str(int(clip_width / 2)))
-                current_timeline.SetSetting("timelineResolutionHeight", str(int(clip_height / 2)))
-                current_timeline.SetSetting("timelineFrameRate", str(float(25)))
-                media_pool.AppendToTimeline(clip)
-                times += 1
-                if times == len(sub_folder.GetClipList()) - 1:
-                    break
+    for clip in sub_folder.GetClipList():
+        clip_width: int = int(clip.GetClipProperty()["Resolution"].split("x")[0])
+        clip_height: int = int(clip.GetClipProperty()["Resolution"].split("x")[1])
+        if clip_height == 1080:
+            timeline_name = f"{sub_folder_name}_{str(clip_width)}x{str(clip_height)}"
+            media_pool.SetCurrentFolder("_Timeline")
+            media_pool.CreateEmptyTimeline(timeline_name)
+            project.SetCurrentTimeline(timeline_name)
+            current_timeline = project.GetCurrentTimeline()
+            current_timeline.SetSetting("useCustomSettings", "1")
+            current_timeline.SetSetting("timelineResolutionWidth", str(int(clip_width)))
+            current_timeline.SetSetting("timelineResolutionHeight", str(int(clip_height)))
+            current_timeline.SetSetting("timelineFrameRate", str(float(25)))
+            media_pool.AppendToTimeline(clip)
+        elif clip_width > 1080:
+            timeline_name = f"{sub_folder_name}_{str(int(clip_width / 2))}x{str(int(clip_height / 2))}"
+            media_pool.SetCurrentFolder("_Timeline")
+            media_pool.CreateEmptyTimeline(timeline_name)
 
-    else:
-        continue
+            timeline_number = project.GetTimelineCount()
+            for i in range(timeline_number):
+                timeline = project.GetTimelineByIndex(i + 1)
+                if timeline.GetSetting()["timelineResolutionWidth"] == str(clip_width):
+                    while project.SetCurrentTimeline(timeline):
+                        print("successful")
+                        break
+
+            current_timeline = project.GetCurrentTimeline()
+            print(current_timeline.GetName())
+            current_timeline.SetSetting("useCustomSettings", "1")
+            current_timeline.SetSetting("timelineResolutionWidth", str(int(clip_width / 2)))
+            current_timeline.SetSetting("timelineResolutionHeight", str(int(clip_height / 2)))
+            current_timeline.SetSetting("timelineFrameRate", str(float(25)))
+            media_pool.AppendToTimeline(clip)
