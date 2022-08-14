@@ -70,18 +70,25 @@ for sub_folder in root_folder.GetSubFolderList():
                 timeline_name = f"{sub_folder_name}_{str(int(clip_width / 2))}x{str(int(clip_height / 2))}"
                 media_pool.SetCurrentFolder("_Timeline")
                 media_pool.CreateEmptyTimeline(timeline_name)
-                if project.SetCurrentTimeline(timeline_name):
-                    print("SetCurrentTimeline 2048x1080 successful")
-                timeline = project.GetCurrentTimeline()
-                print(timeline.GetName())
-                timeline.SetSetting("useCustomSettings", "1")
-                timeline.SetSetting("timelineResolutionWidth", str(int(clip_width / 2)))
-                timeline.SetSetting("timelineResolutionHeight", str(int(clip_height / 2)))
-                timeline.SetSetting("timelineFrameRate", str(float(25)))
-                media_pool.AppendToTimeline(clip)
-                times += 1
-                if times == len(sub_folder.GetClipList()) - 1:
-                    break
+
+                timeline_number = project.GetTimelineCount()
+                for i in range(timeline_number):
+                    timeline = project.GetTimelineByIndex(i + 1)
+                    project.SetCurrentTimeline(timeline)
+
+
+
+                    if project.get_current_timeline().get_name().split("_")[2].split("x")[0] == clip_width:
+                        timeline = project.GetCurrentTimeline()
+                        print(timeline.GetName())
+                        timeline.SetSetting("useCustomSettings", "1")
+                        timeline.SetSetting("timelineResolutionWidth", str(int(clip_width / 2)))
+                        timeline.SetSetting("timelineResolutionHeight", str(int(clip_height / 2)))
+                        timeline.SetSetting("timelineFrameRate", str(float(25)))
+                        media_pool.AppendToTimeline(clip)
+                        times += 1
+                        if times == len(sub_folder.GetClipList()) - 1:
+                            break
 
     else:
         continue
