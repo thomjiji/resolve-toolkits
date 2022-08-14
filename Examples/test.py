@@ -52,6 +52,7 @@ for sub_folder in root_folder.GetSubFolderList():
             timeline_name = f"{sub_folder_name}_{str(clip_width)}x{str(clip_height)}"
             project.SetSetting("timelineResolutionWidth", str(int(clip_width)))
             project.SetSetting("timelineResolutionHeight", str(int(clip_height)))
+            project.SetSetting("timelineFrameRate", str(float(25)))
             media_pool.SetCurrentFolder("_Timeline")
             media_pool.CreateEmptyTimeline(timeline_name)
             media_pool.AppendToTimeline(clip)
@@ -59,6 +60,7 @@ for sub_folder in root_folder.GetSubFolderList():
             timeline_name = f"{sub_folder_name}_{str(int(clip_width / 2))}x{str(int(clip_height / 2))}"
             project.SetSetting("timelineResolutionWidth", str(int(clip_width / 2)))
             project.SetSetting("timelineResolutionHeight", str(int(clip_height / 2)))
+            project.SetSetting("timelineFrameRate", str(float(25)))
             media_pool.SetCurrentFolder("_Timeline")
             media_pool.CreateEmptyTimeline(timeline_name)
             media_pool.AppendToTimeline(clip)
