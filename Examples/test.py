@@ -41,7 +41,7 @@ for count, sub_folder in enumerate(root_folder.GetSubFolderList()):
         break
     media_storage.AddItemListToMediaPool(sub_folders_full_path[count])
 
-# 3. 新建多条时间线
+# 3. 新建多条时间线 TODO
 for sub_folder in root_folder.GetSubFolderList():
     # 排除 _Timeline 这个 Bin
     if sub_folder.GetName() == "_Timeline":
@@ -49,17 +49,12 @@ for sub_folder in root_folder.GetSubFolderList():
 
     sub_folder_name = sub_folder.GetName()
 
-    # clip_name_list = []
-    # for clip in sub_folder.GetClipList():
-    #     clip_name_list.append(clip.GetName())
-    # clip_name_list.sort()
-
     for clip in sub_folder.GetClipList():
         clip_width: int = int(clip.GetClipProperty()["Resolution"].split("x")[0])
         clip_height: int = int(clip.GetClipProperty()["Resolution"].split("x")[1])
         if clip_height == 1080:
             timeline_name = f"{sub_folder_name}_{str(clip_width)}x{str(clip_height)}"
-            media_pool.SetCurrentFolder("_Timeline")
+            # media_pool.SetCurrentFolder("_Timeline")
             media_pool.CreateEmptyTimeline(timeline_name)
             project.SetCurrentTimeline(timeline_name)
             current_timeline = project.GetCurrentTimeline()
@@ -70,7 +65,7 @@ for sub_folder in root_folder.GetSubFolderList():
             media_pool.AppendToTimeline(clip)
         elif clip_width > 1080:
             timeline_name = f"{sub_folder_name}_{str(int(clip_width / 2))}x{str(int(clip_height / 2))}"
-            media_pool.SetCurrentFolder("_Timeline")
+            # media_pool.SetCurrentFolder("_Timeline")
             media_pool.CreateEmptyTimeline(timeline_name)
 
             timeline_number = project.GetTimelineCount()
