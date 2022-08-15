@@ -28,6 +28,16 @@ def get_sub_folder_name(full_path: List[str]) -> List[str]:
     return sub_folder_name
 
 
+def create_new_timeline(timeline: str, width: str, height: str) -> None:
+    """Create new timeline in the _Timeline Bin (The last folder under root folder)"""
+    media_pool.SetCurrentFolder(root_folder.GetSubFolderList()[-1])
+    media_pool.CreateEmptyTimeline(timeline).SetSetting("useCustomSettings", "1")
+    current_timeline = project.GetCurrentTimeline()
+    current_timeline.SetSetting("timelineResolutionWidth", width)
+    current_timeline.SetSetting("timelineResolutionHeight", height)
+    current_timeline.SetSetting("timelineFrameRate", str(float(25)))
+
+
 # 1. Create sub-folder in media pool.
 sub_folders_name: List[str] = get_sub_folder_name(sub_folders_full_path)
 for i in sub_folders_name:
@@ -42,44 +52,21 @@ for count, sub_folder in enumerate(root_folder.GetSubFolderList()):
     media_storage.AddItemListToMediaPool(sub_folders_full_path[count])
 
 # 3. 新建多条时间线 TODO
-for sub_folder in root_folder.GetSubFolderList():
-    # 排除 _Timeline 这个 Bin
+# 拿到机位 bin 下所有 clip 的分辨率信息，create new empty timeline.
+for index, sub_folder in enumerate(root_folder.GetSubFolderList()):
+
+    # 排除 _Timeline Bin
     if sub_folder.GetName() == "_Timeline":
         break
 
-    sub_folder_name = sub_folder.GetName()
+    # 拿到机位 bin 下所有 clip 的分辨率信息 assign to all_clips_resolution 这个 list.
+    all_clips_resolution = []  # Camera 机位 bin 下所有 clip 的 resolution 信息
+    for clips in sub_folder.GetClipList():
+        all_clips_resolution.append(clips.GetClipProperty()["Resolution"])
+    all_clips_resolution: list[str] = list(dict.fromkeys(all_clips_resolution))  # 移除 list 中的重复项
+    # print(f"{index + 1}. {sub_folder.GetName()}: {all_clips_resolution}")
 
-    for clip in sub_folder.GetClipList():
-        clip_width: int = int(clip.GetClipProperty()["Resolution"].split("x")[0])
-        clip_height: int = int(clip.GetClipProperty()["Resolution"].split("x")[1])
-        if clip_height == 1080:
-            timeline_name = f"{sub_folder_name}_{str(clip_width)}x{str(clip_height)}"
-            # media_pool.SetCurrentFolder("_Timeline")
-            media_pool.CreateEmptyTimeline(timeline_name)
-            project.SetCurrentTimeline(timeline_name)
-            current_timeline = project.GetCurrentTimeline()
-            current_timeline.SetSetting("useCustomSettings", "1")
-            current_timeline.SetSetting("timelineResolutionWidth", str(int(clip_width)))
-            current_timeline.SetSetting("timelineResolutionHeight", str(int(clip_height)))
-            current_timeline.SetSetting("timelineFrameRate", str(float(25)))
-            media_pool.AppendToTimeline(clip)
-        elif clip_width > 1080:
-            timeline_name = f"{sub_folder_name}_{str(int(clip_width / 2))}x{str(int(clip_height / 2))}"
-            # media_pool.SetCurrentFolder("_Timeline")
-            media_pool.CreateEmptyTimeline(timeline_name)
-
-            timeline_number = project.GetTimelineCount()
-            for i in range(timeline_number):
-                timeline = project.GetTimelineByIndex(i + 1)
-                if timeline.GetSetting()["timelineResolutionWidth"] == str(int(clip_width / 2)):
-                    while project.SetCurrentTimeline(timeline):
-                        print("successful")
-                        break
-
-            current_timeline = project.GetCurrentTimeline()
-            print(current_timeline.GetName())
-            current_timeline.SetSetting("useCustomSettings", "1")
-            current_timeline.SetSetting("timelineResolutionWidth", str(int(clip_width / 2)))
-            current_timeline.SetSetting("timelineResolutionHeight", str(int(clip_height / 2)))
-            current_timeline.SetSetting("timelineFrameRate", str(float(25)))
-            media_pool.AppendToTimeline(clip)
+    # 根据 all_clips_resolution 里的分辨率信息新建时间线
+    for res in all_clips_resolution:
+        timeline_name = f"{sub_folder.GetName()}_{res}"
+        create_new_timeline(timeline_name, res.split("x")[0], res.split("x")[1])
