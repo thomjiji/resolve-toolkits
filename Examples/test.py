@@ -41,11 +41,6 @@ for count, sub_folder in enumerate(root_folder.GetSubFolderList()):
         break
     media_storage.AddItemListToMediaPool(sub_folders_full_path[count])
 
-# for i in all_clips:
-#     for j in i:
-#         pprint(j.GetClipProperty())
-#         break
-
 # 3. 新建多条时间线
 for sub_folder in root_folder.GetSubFolderList():
     # 排除 _Timeline 这个 Bin
@@ -81,7 +76,7 @@ for sub_folder in root_folder.GetSubFolderList():
             timeline_number = project.GetTimelineCount()
             for i in range(timeline_number):
                 timeline = project.GetTimelineByIndex(i + 1)
-                if timeline.GetSetting()["timelineResolutionWidth"] == str(clip_width):
+                if timeline.GetSetting()["timelineResolutionWidth"] == str(int(clip_width / 2)):
                     while project.SetCurrentTimeline(timeline):
                         print("successful")
                         break
