@@ -31,6 +31,14 @@ def get_sub_folder_name(full_path: List[str]) -> List[str]:
 def create_new_timeline(timeline: str, width: str, height: str) -> None:
     """Create new timeline in the _Timeline Bin (The last folder under root folder)"""
     media_pool.SetCurrentFolder(root_folder.GetSubFolderList()[-1])
+    timeline_number = project.GetTimelineCount()
+    for i in range(timeline_number):
+        existing_timeline = project.GetTimelineByIndex(i + 1)
+        if existing_timeline.GetName() == timeline or existing_timeline.GetSetting()[
+            'timelineResolutionWidth'] == width and existing_timeline.GetSetting()[
+            'timelineResolutionHeight'] == height:
+            project.SetCurrentTimeline(existing_timeline)
+
     media_pool.CreateEmptyTimeline(timeline)
     current_timeline = project.GetCurrentTimeline()
     current_timeline.SetSetting("useCustomSettings", "1")
