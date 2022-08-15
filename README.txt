@@ -250,7 +250,7 @@ MediaPoolItem
   GetClipColor()                                  --> string             # Returns the item color as a string.
   SetClipColor(colorName)                         --> Bool               # Sets the item color based on the colorName (string).
   ClearClipColor()                                --> Bool               # Clears the item color.
-  GetClipProperty(propertyName=None)              --> string|dict        # Returns the property value for the key 'propertyName'. 
+  GetClipProperty(propertyName=None)              --> string|dict        # Returns the property value for the key 'propertyName'.
                                                                          # If no argument is specified, a dict of all clip properties is returned. Check the section below for more information.
   SetClipProperty(propertyName, propertyValue)    --> Bool               # Sets the given property to propertyValue (string). Check the section below for more information.
   LinkProxyMedia(proxyMediaFilePath)              --> Bool               # Links proxy media located at path specified by arg 'proxyMediaFilePath' with the current clip. 'proxyMediaFilePath' should be absolute clip path.
