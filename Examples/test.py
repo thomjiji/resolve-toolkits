@@ -31,8 +31,9 @@ def get_sub_folder_name(full_path: List[str]) -> List[str]:
 def create_new_timeline(timeline: str, width: str, height: str) -> None:
     """Create new timeline in the _Timeline Bin (The last folder under root folder)"""
     media_pool.SetCurrentFolder(root_folder.GetSubFolderList()[-1])
-    media_pool.CreateEmptyTimeline(timeline).SetSetting("useCustomSettings", "1")
+    media_pool.CreateEmptyTimeline(timeline)
     current_timeline = project.GetCurrentTimeline()
+    current_timeline.SetSetting("useCustomSettings", "1")
     current_timeline.SetSetting("timelineResolutionWidth", width)
     current_timeline.SetSetting("timelineResolutionHeight", height)
     current_timeline.SetSetting("timelineFrameRate", str(float(25)))
@@ -68,5 +69,11 @@ for index, sub_folder in enumerate(root_folder.GetSubFolderList()):
 
     # 根据 all_clips_resolution 里的分辨率信息新建时间线
     for res in all_clips_resolution:
-        timeline_name = f"{sub_folder.GetName()}_{res}"
-        create_new_timeline(timeline_name, res.split("x")[0], res.split("x")[1])
+        if res.split("x")[1] <= "1080":
+            timeline_name = f"{sub_folder.GetName()}_{res}"
+            create_new_timeline(timeline_name, res.split("x")[0], res.split("x")[1])
+        else:
+            clip_width = str(int(int(res.split('x')[0]) / 2))
+            clip_height = str(int(int(res.split('x')[1]) / 2))
+            timeline_name = f"{sub_folder.GetName()}_{clip_width}x{clip_height}"
+            create_new_timeline(timeline_name, clip_width, clip_height)
