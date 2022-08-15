@@ -1,4 +1,6 @@
 from pprint import pprint
+
+from pybmd.media_pool_item import MediaPoolItem
 from python_get_resolve import GetResolve
 from typing import List, Union
 import sys
@@ -9,35 +11,42 @@ resolve = GetResolve()
 project_manager = resolve.GetProjectManager()
 project = project_manager.GetCurrentProject()
 media_storage = resolve.GetMediaStorage()
-
-sub_folders_full_path = media_storage.GetSubFolderList(media_path)
-
-
-def get_sub_folder_name(folder_full_path: List[str]) -> List[str]:
-    """Get folder name from media storage."""
-    folder_name_list = []
-    for i in folder_full_path:
-        split_folder_path_list = i.split("/")
-        folder_name_list.append(split_folder_path_list[-1])
-    return folder_name_list
-
-
-# Create subfolder in media pool.
-sub_folder_name = get_sub_folder_name(sub_folders_full_path)
 media_pool = project.GetMediaPool()
 root_folder = media_pool.GetRootFolder()
-for i in sub_folder_name:
+sub_folders_full_path: List[str] = media_storage.GetSubFolderList(media_path)
+
+
+def get_sub_folder_name(full_path: List[str]) -> List[str]:
+    """
+    Extract sub-folder name from media storage full path.
+    For creating sub-folder in the media pool.
+    """
+    sub_folder_name: List[str] = []
+    for i in full_path:
+        split_full_path = i.split("/")
+        sub_folder_name.append(split_full_path[-1])
+    return sub_folder_name
+
+
+# 1. Create sub-folder in media pool.
+sub_folders_name: List[str] = get_sub_folder_name(sub_folders_full_path)
+for i in sub_folders_name:
     media_pool.AddSubFolder(root_folder, i)
 media_pool.AddSubFolder(root_folder, "_Timeline")
 
-# Import footage from media storage.
-all_clips = []  # a list of MediaPoolItems.
+# 2. Import footage from media storage into the corresponding sub-folder of the media pool.
 for count, sub_folder in enumerate(root_folder.GetSubFolderList()):
     media_pool.SetCurrentFolder(sub_folder)
     if sub_folder.GetName() == "_Timeline":
         break
-    all_clips.append(media_storage.AddItemListToMediaPool(sub_folders_full_path[count]))
+    media_storage.AddItemListToMediaPool(sub_folders_full_path[count])
 
+# for i in all_clips:
+#     for j in i:
+#         pprint(j.GetClipProperty())
+#         break
+
+# 3. 新建多条时间线
 for sub_folder in root_folder.GetSubFolderList():
     # 排除 _Timeline 这个 Bin
     if sub_folder.GetName() == "_Timeline":
