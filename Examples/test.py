@@ -1,19 +1,22 @@
 from pprint import pprint
-
+from pybmd import Bmd, toolkits
 from pybmd.media_pool_item import MediaPoolItem
+from pybmd.project import Project
+
 from python_get_resolve import GetResolve
 from typing import List, Union
 import sys
 
 media_path: str = sys.argv[1]
 
-resolve = GetResolve()
-project_manager = resolve.GetProjectManager()
-project = project_manager.GetCurrentProject()
-media_storage = resolve.GetMediaStorage()
-media_pool = project.GetMediaPool()
-root_folder = media_pool.GetRootFolder()
-sub_folders_full_path: List[str] = media_storage.GetSubFolderList(media_path)
+# Initialize pybmd objects
+resolve = Bmd()
+project_manager = resolve.get_project_manager()
+project = project_manager.get_current_project()
+media_storage = resolve.get_media_stroage()
+media_pool = project.get_media_pool()
+root_folder = media_pool.get_root_folder()
+sub_folders_full_path: List[str] = media_storage.get_sub_folder_list(media_path)
 
 
 def get_sub_folder_name(full_path: List[str]) -> List[str]:
@@ -28,37 +31,50 @@ def get_sub_folder_name(full_path: List[str]) -> List[str]:
     return sub_folder_name
 
 
-def create_new_timeline(timeline: str, width: str, height: str) -> None:
+def create_new_timeline(project: Project, timeline: str, width: str, height: str) -> None:
     """Create new timeline in the _Timeline Bin (The last folder under root folder)"""
-    media_pool.SetCurrentFolder(root_folder.GetSubFolderList()[-1])
-    timeline_number = project.GetTimelineCount()
-    for i in range(timeline_number):
-        existing_timeline = project.GetTimelineByIndex(i + 1)
-        if existing_timeline.GetName() == timeline or existing_timeline.GetSetting()[
-            'timelineResolutionWidth'] == width and existing_timeline.GetSetting()[
-            'timelineResolutionHeight'] == height:
-            project.SetCurrentTimeline(existing_timeline)
+    media_pool.set_current_folder(root_folder.get_sub_folder_list()[-1])
 
-    media_pool.CreateEmptyTimeline(timeline)
-    current_timeline = project.GetCurrentTimeline()
-    current_timeline.SetSetting("useCustomSettings", "1")
-    current_timeline.SetSetting("timelineResolutionWidth", width)
-    current_timeline.SetSetting("timelineResolutionHeight", height)
-    current_timeline.SetSetting("timelineFrameRate", str(float(25)))
+    # New method to check duplication of timeline.
+    # Get timeline by name, return timeline object.
+    existing_timeline = toolkits.get_timeline(project, timeline)
+    if existing_timeline or existing_timeline.get_setting(
+        'timelineResolutionWidth') == width or existing_timeline.get_setting('timelineResolutionHeight') == height:
+        project.set_current_timeline(existing_timeline)
+
+    # Lagacy method to check if the timeline that I'm about to create is a duplicate of a existing one.
+    # timeline_number = project.get_timeline_count()
+    # for i in range(timeline_number):
+    #     existing_timeline = project.get_timeline_by_index(i + 1)
+    #     if existing_timeline.get_name() == timeline or existing_timeline.get_setting(
+    #         'timelineResolutionWidth') == width and existing_timeline.get_setting('timelineResolutionHeight') == height:
+    #         project.set_current_timeline(existing_timeline)
+
+    media_pool.create_empty_timeline(timeline)
+    current_timeline = project.get_current_timeline()
+    current_timeline.set_setting("useCustomSettings", "1")
+    current_timeline.set_setting("timelineResolutionWidth", width)
+    current_timeline.set_setting("timelineResolutionHeight", height)
+    current_timeline.set_setting("timelineFrameRate", str(float(25)))
 
 
-# 1. Create sub-folder in media pool.
-sub_folders_name: List[str] = get_sub_folder_name(sub_folders_full_path)
-for i in sub_folders_name:
-    media_pool.AddSubFolder(root_folder, i)
-media_pool.AddSubFolder(root_folder, "_Timeline")
+def create_bin(sub_folders_full_path: list) -> None:
+    """Create sub-folder in media pool."""
+    sub_folders_name: List[str] = get_sub_folder_name(sub_folders_full_path)
+    for i in sub_folders_name:
+        media_pool.add_sub_folder(root_folder, i)
+    media_pool.add_sub_folder(root_folder, "_Timeline")
 
-# 2. Import footage from media storage into the corresponding sub-folder of the media pool.
-for count, sub_folder in enumerate(root_folder.GetSubFolderList()):
-    media_pool.SetCurrentFolder(sub_folder)
-    if sub_folder.GetName() == "_Timeline":
-        break
-    media_storage.AddItemListToMediaPool(sub_folders_full_path[count])
+
+def import_clip():
+    """Import footage from media storage into the corresponding sub-folder of the media pool."""
+    for count, sub_folder in enumerate(root_folder.GetSubFolderList()):
+        media_pool.SetCurrentFolder(sub_folder)
+        # 导入素材的时候排除 _Timeline 这个目的地 Bin
+        if sub_folder.GetName() == "_Timeline":
+            break
+        media_storage.AddItemListToMediaPool(sub_folders_full_path[count])
+
 
 # 3. 新建多条时间线
 # 拿到机位 bin 下所有 clip 的分辨率信息，create new empty timeline.
