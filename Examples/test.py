@@ -42,14 +42,6 @@ def create_new_timeline(project: Project, timeline: str, width: str, height: str
         'timelineResolutionWidth') == width or existing_timeline.get_setting('timelineResolutionHeight') == height:
         project.set_current_timeline(existing_timeline)
 
-    # Lagacy method to check if the timeline that I'm about to create is a duplicate of a existing one.
-    # timeline_number = project.get_timeline_count()
-    # for i in range(timeline_number):
-    #     existing_timeline = project.get_timeline_by_index(i + 1)
-    #     if existing_timeline.get_name() == timeline or existing_timeline.get_setting(
-    #         'timelineResolutionWidth') == width and existing_timeline.get_setting('timelineResolutionHeight') == height:
-    #         project.set_current_timeline(existing_timeline)
-
     media_pool.create_empty_timeline(timeline)
     current_timeline = project.get_current_timeline()
     current_timeline.set_setting("useCustomSettings", "1")
