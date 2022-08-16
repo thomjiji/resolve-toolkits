@@ -18,6 +18,13 @@ media_pool = project.get_media_pool()
 root_folder = media_pool.get_root_folder()
 sub_folders_full_path: List[str] = media_storage.get_sub_folder_list(media_path)
 
+# Initialize Resolve original API
+Resolve = GetResolve()
+Project_Manager = resolve.GetProjectManager()
+Media_Storage = resolve.GetMediaStorage()
+Media_Pool = Project.GetMediaPool()
+Root_Folder = Media_Pool.GetRootFolder()
+
 
 def get_sub_folder_name(full_path: List[str]) -> List[str]:
     """
@@ -38,7 +45,7 @@ def create_new_timeline(project: Project, timeline: str, width: str, height: str
     # New method to check duplication of timeline.
     # Get timeline by name, return timeline object.
     existing_timeline = toolkits.get_timeline(project, timeline)
-    if existing_timeline or existing_timeline.get_setting(
+    if existing_timeline.get_name() == timeline or existing_timeline.get_setting(
         'timelineResolutionWidth') == width or existing_timeline.get_setting('timelineResolutionHeight') == height:
         project.set_current_timeline(existing_timeline)
 
@@ -58,14 +65,14 @@ def create_bin(sub_folders_full_path: list) -> None:
     media_pool.add_sub_folder(root_folder, "_Timeline")
 
 
-def import_clip():
+def import_clip() -> None:
     """Import footage from media storage into the corresponding sub-folder of the media pool."""
-    for count, sub_folder in enumerate(root_folder.GetSubFolderList()):
-        media_pool.SetCurrentFolder(sub_folder)
+    for count, sub_folder in enumerate(Root_Folder.GetSubFolderList()):
+        Media_Pool.SetCurrentFolder(sub_folder)
         # 导入素材的时候排除 _Timeline 这个目的地 Bin
         if sub_folder.GetName() == "_Timeline":
             break
-        media_storage.AddItemListToMediaPool(sub_folders_full_path[count])
+        Media_Storage.AddItemListToMediaPool(sub_folders_full_path[count])
 
 
 # 3. 新建多条时间线
