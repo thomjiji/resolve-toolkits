@@ -74,13 +74,20 @@ def get_resolution() -> list:
     return all_clips_resolution
 
 
-def create_and_change_timeline(timeline_name: str, width: str, height: str):
+def create_and_change_timeline(timeline_name: str, width: str, height: str) -> None:
     media_pool.CreateEmptyTimeline(timeline_name)
     current_timeline = project.GetCurrentTimeline()
     current_timeline.SetSetting("useCustomSettings", "1")
     current_timeline.SetSetting("timelineResolutionWidth", str(width))
     current_timeline.SetSetting("timelineResolutionHeight", str(height))
     current_timeline.SetSetting("timelineFrameRate", str(float(25)))
+
+
+def get_all_timeline() -> list:
+    all_timeline = []
+    for timeline_index in range(1, project.GetTimelineCount() + 1, 1):
+        all_timeline.append(project.GetTimelineByIndex(timeline_index))
+    return all_timeline
 
 
 def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
@@ -91,15 +98,18 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
 
     if project.GetTimelineCount() == 0:
         create_and_change_timeline(timeline_name, str(width), str(height))
+        return True
     else:
-        timeline_number = project.GetTimelineCount()
-        print(f"timeline_number: {timeline_number}")
-        for i in range(timeline_number):
-            existing_timeline = project.GetTimelineByIndex(i + 1)
-            if existing_timeline.GetName() == timeline_name:
+        # timeline_number = project.GetTimelineCount()
+        # for i in range(timeline_number):
+        #     existing_timeline = project.GetTimelineByIndex(i + 1)
+        for existing_timeline in get_all_timeline():
+            if existing_timeline.GetSetting("timelineResolutionWidth") == str(width) and existing_timeline.GetSetting(
+                "timelineResolutionHeight") == str(height):
                 return False
             else:
                 create_and_change_timeline(timeline_name, str(width), str(height))
+        return True
 
 
 # # 3. 新建多条时间线
@@ -155,11 +165,10 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
 #                     media_pool.AppendToTimeline(clip)
 
 if __name__ == "__main__":
-
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    sub_folders_name = get_sub_folder_name(sub_folders_full_path)
-    create_bin(sub_folders_name)
-    import_clip()
+    # sub_folders_name = get_sub_folder_name(sub_folders_full_path)
+    # create_bin(sub_folders_name)
+    # import_clip()
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
