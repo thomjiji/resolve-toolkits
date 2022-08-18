@@ -107,6 +107,16 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
                 f"{existing_timeline.GetSetting('timelineResolutionWidth')}x{existing_timeline.GetSetting('timelineResolutionHeight')}")
         if f"{str(width)}x{str(height)}" not in existing_timeline_resolution:
             create_and_change_timeline(timeline_name, str(width), str(height))
+        else:
+            current_timeline = project.GetCurrentTimeline()
+            new_name = f"{current_timeline.GetName()}_{str(width * 2)}x{str(height * 2)}"
+            current_timeline.SetName(new_name)
+
+# def append_to_timeline():
+#     for sub_folder in root_folder.GetSubFolderList():
+#         for clip in sub_folder.GetClipList():
+#             if clip.GetClipProperty("Resolution") == ""
+
 
 
 # # 3. 新建多条时间线
@@ -162,10 +172,10 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
 #                     media_pool.AppendToTimeline(clip)
 
 if __name__ == "__main__":
-    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    sub_folders_name = get_sub_folder_name(sub_folders_full_path)
-    create_bin(sub_folders_name)
-    import_clip()
+    # # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+    # sub_folders_name = get_sub_folder_name(sub_folders_full_path)
+    # create_bin(sub_folders_name)
+    # import_clip()
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
@@ -178,3 +188,6 @@ if __name__ == "__main__":
             timeline_width = int(int(res.split("x")[0]) / 2)
             timeline_height = int(int(res.split("x")[1]) / 2)
             create_new_timeline(res, timeline_width, timeline_height)
+
+    # for i in get_all_timeline():
+    #     print(i.GetName())
