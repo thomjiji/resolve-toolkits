@@ -74,6 +74,15 @@ def get_resolution() -> list:
     return all_clips_resolution
 
 
+def create_and_change_timeline(timeline_name: str, width: str, height: str):
+    media_pool.CreateEmptyTimeline(timeline_name)
+    current_timeline = project.GetCurrentTimeline()
+    current_timeline.SetSetting("useCustomSettings", "1")
+    current_timeline.SetSetting("timelineResolutionWidth", str(width))
+    current_timeline.SetSetting("timelineResolutionHeight", str(height))
+    current_timeline.SetSetting("timelineFrameRate", str(float(25)))
+
+
 def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
     """
     Create new timeline in the _Timeline bin (the last folder under root folder).
@@ -81,25 +90,16 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
     media_pool.SetCurrentFolder(root_folder.GetSubFolderList()[-1])  # SetCurrentFolder 到 _Timeline bin 把时间线都建在这
 
     if project.GetTimelineCount() == 0:
-        media_pool.CreateEmptyTimeline(timeline_name)
-        current_timeline = project.GetCurrentTimeline()
-        current_timeline.SetSetting("useCustomSettings", "1")
-        current_timeline.SetSetting("timelineResolutionWidth", str(width))
-        current_timeline.SetSetting("timelineResolutionHeight", str(height))
-        current_timeline.SetSetting("timelineFrameRate", str(float(25)))
+        create_and_change_timeline(timeline_name, str(width), str(height))
     else:
         timeline_number = project.GetTimelineCount()
+        print(f"timeline_number: {timeline_number}")
         for i in range(timeline_number):
             existing_timeline = project.GetTimelineByIndex(i + 1)
             if existing_timeline.GetName() == timeline_name:
                 return False
             else:
-                media_pool.CreateEmptyTimeline(timeline_name)
-                current_timeline = project.GetCurrentTimeline()
-                current_timeline.SetSetting("useCustomSettings", "1")
-                current_timeline.SetSetting("timelineResolutionWidth", width)
-                current_timeline.SetSetting("timelineResolutionHeight", height)
-                current_timeline.SetSetting("timelineFrameRate", str(float(25)))
+                create_and_change_timeline(timeline_name, str(width), str(height))
 
 
 # # 3. 新建多条时间线
