@@ -83,21 +83,10 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
     if project.GetTimelineCount() == 0:
         media_pool.CreateEmptyTimeline(timeline_name)
         current_timeline = project.GetCurrentTimeline()
-
-        print(f"create_new_timeline input width: {width}")
-        print(f"create_new_timeline input height: {height}")
-
-        print(f"before setsetting: {current_timeline.GetSetting('timelineResolutionWidth')}")
-        print(f"before setsetting: {current_timeline.GetSetting('timelineResolutionHeight')}")
-
         current_timeline.SetSetting("useCustomSettings", "1")
         current_timeline.SetSetting("timelineResolutionWidth", str(width))
         current_timeline.SetSetting("timelineResolutionHeight", str(height))
         current_timeline.SetSetting("timelineFrameRate", str(float(25)))
-
-        print(f"after setsetting: {current_timeline.GetSetting('timelineResolutionWidth')}")
-        print(f"after setsetting: {current_timeline.GetSetting('timelineResolutionHeight')}")
-
     else:
         timeline_number = project.GetTimelineCount()
         for i in range(timeline_number):
@@ -166,12 +155,14 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
 #                     media_pool.AppendToTimeline(clip)
 
 if __name__ == "__main__":
-    # sub_folders_name = get_sub_folder_name(sub_folders_full_path)
-    # create_bin(sub_folders_name)
-    # import_clip()
 
+    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+    sub_folders_name = get_sub_folder_name(sub_folders_full_path)
+    create_bin(sub_folders_name)
+    import_clip()
+
+    # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
-        # create_new_timeline(res, res.split("x")[0], res.split("x")[1])
         print(f"Original RESOLUTION: {res}")
         if int(res.split("x")[1]) <= 1080:
             timeline_width = (res.split("x")[0])
