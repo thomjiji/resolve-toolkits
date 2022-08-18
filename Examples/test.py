@@ -84,6 +84,7 @@ def create_and_change_timeline(timeline_name: str, width: str, height: str) -> N
 
 
 def get_all_timeline() -> list:
+    """Get all existing timelines. Return a list containing timeline object."""
     all_timeline = []
     for timeline_index in range(1, project.GetTimelineCount() + 1, 1):
         all_timeline.append(project.GetTimelineByIndex(timeline_index))
@@ -100,9 +101,6 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
         create_and_change_timeline(timeline_name, str(width), str(height))
         return True
     else:
-        # timeline_number = project.GetTimelineCount()
-        # for i in range(timeline_number):
-        #     existing_timeline = project.GetTimelineByIndex(i + 1)
         for existing_timeline in get_all_timeline():
             if existing_timeline.GetSetting("timelineResolutionWidth") == str(width) and existing_timeline.GetSetting(
                 "timelineResolutionHeight") == str(height):
