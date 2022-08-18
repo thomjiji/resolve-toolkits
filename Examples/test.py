@@ -101,13 +101,12 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
         create_and_change_timeline(timeline_name, str(width), str(height))
         return True
     else:
+        existing_timeline_resolution = []
         for existing_timeline in get_all_timeline():
-            if existing_timeline.GetSetting("timelineResolutionWidth") == str(width) and existing_timeline.GetSetting(
-                "timelineResolutionHeight") == str(height):
-                return False
-            else:
-                create_and_change_timeline(timeline_name, str(width), str(height))
-        return True
+            existing_timeline_resolution.append(
+                f"{existing_timeline.GetSetting('timelineResolutionWidth')}x{existing_timeline.GetSetting('timelineResolutionHeight')}")
+        if f"{str(width)}x{str(height)}" not in existing_timeline_resolution:
+            create_and_change_timeline(timeline_name, str(width), str(height))
 
 
 # # 3. 新建多条时间线
@@ -164,9 +163,9 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
 
 if __name__ == "__main__":
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    # sub_folders_name = get_sub_folder_name(sub_folders_full_path)
-    # create_bin(sub_folders_name)
-    # import_clip()
+    sub_folders_name = get_sub_folder_name(sub_folders_full_path)
+    create_bin(sub_folders_name)
+    import_clip()
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
