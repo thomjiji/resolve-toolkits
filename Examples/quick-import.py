@@ -1,20 +1,9 @@
-from pprint import pprint
-
 # Import modules for Resolve native API
 from python_get_resolve import GetResolve
 from typing import List, Union
 import sys
 
 media_path: str = sys.argv[1]
-
-# # Initialize pybmd objects
-# resolve = Bmd()
-# project_manager = resolve.get_project_manager()
-# project = project_manager.get_current_project()
-# media_storage = resolve.get_media_stroage()
-# media_pool = project.get_media_pool()
-# root_folder = media_pool.get_root_folder()
-# sub_folders_full_path: List[str] = media_storage.get_sub_folder_list(media_path)
 
 # Initialize Resolve native API
 resolve = GetResolve()
@@ -24,9 +13,6 @@ media_storage = resolve.GetMediaStorage()
 media_pool = project.GetMediaPool()
 root_folder = media_pool.GetRootFolder()
 sub_folders_full_path: List[str] = media_storage.GetSubFolderList(media_path)
-
-
-# media_pool_sub_folder_list = root_folder.GetSubFolderList()
 
 
 def get_sub_folder_name(source_media_full_path: List[str]) -> List[str]:
@@ -129,12 +115,13 @@ def append_to_timeline() -> None:
     all_timeline_name = [timeline.GetName() for timeline in get_all_timeline()]
     for sub_folder in root_folder.GetSubFolderList():
         for clip in sub_folder.GetClipList():
-            clip_width = clip.GetClipProperty("Resolution").split("x")[0]
-            clip_height = clip.GetClipProperty("Resolution").split("x")[1]
-            for name in all_timeline_name:
-                if f"{clip_width}x{clip_height}" in name:
-                    project.SetCurrentTimeline(get_timeline_by_name(name))
-                    media_pool.AppendToTimeline(clip)
+            if clip.GetClipProperty("type") == "Video" or clip.GetClipProperty("type") == "Video + Audio":
+                clip_width = clip.GetClipProperty("Resolution").split("x")[0]
+                clip_height = clip.GetClipProperty("Resolution").split("x")[1]
+                for name in all_timeline_name:
+                    if f"{clip_width}x{clip_height}" in name:
+                        project.SetCurrentTimeline(get_timeline_by_name(name))
+                        media_pool.AppendToTimeline(clip)
 
 
 if __name__ == "__main__":
@@ -145,6 +132,8 @@ if __name__ == "__main__":
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
+        if "x" not in res:
+            continue
         if int(res.split("x")[1]) <= 1080:
             timeline_width = (res.split("x")[0])
             timeline_height = (res.split("x")[1])
