@@ -1,5 +1,4 @@
 from pprint import pprint
-from pybmd.project import Project
 
 # Import modules for Resolve native API
 from python_get_resolve import GetResolve
@@ -75,6 +74,10 @@ def get_resolution() -> list:
 
 
 def create_and_change_timeline(timeline_name: str, width: str, height: str) -> None:
+    """
+    Simply create empty timeline and change its resolution to inputs width and height.
+    Used for create_new_timeline() function.
+    """
     media_pool.CreateEmptyTimeline(timeline_name)
     current_timeline = project.GetCurrentTimeline()
     current_timeline.SetSetting("useCustomSettings", "1")
@@ -94,6 +97,7 @@ def get_all_timeline() -> list:
 def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
     """
     Create new timeline in the _Timeline bin (the last folder under root folder).
+    Check timeline duplication.
     """
     media_pool.SetCurrentFolder(root_folder.GetSubFolderList()[-1])  # SetCurrentFolder 到 _Timeline bin 把时间线都建在这
 
@@ -112,70 +116,32 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
             new_name = f"{current_timeline.GetName()}_{str(width * 2)}x{str(height * 2)}"
             current_timeline.SetName(new_name)
 
-# def append_to_timeline():
-#     for sub_folder in root_folder.GetSubFolderList():
-#         for clip in sub_folder.GetClipList():
-#             if clip.GetClipProperty("Resolution") == ""
+
+def get_timeline_by_name(timeline_name: str):
+    """Get timeline object by name."""
+    all_timeline = get_all_timeline()
+    timeline_dict = {timeline.GetName(): timeline for timeline in all_timeline}
+    return timeline_dict.get(timeline_name)
 
 
+def append_to_timeline() -> None:
+    """Append to timeline"""
+    all_timeline_name = [timeline.GetName() for timeline in get_all_timeline()]
+    for sub_folder in root_folder.GetSubFolderList():
+        for clip in sub_folder.GetClipList():
+            clip_width = clip.GetClipProperty("Resolution").split("x")[0]
+            clip_height = clip.GetClipProperty("Resolution").split("x")[1]
+            for name in all_timeline_name:
+                if f"{clip_width}x{clip_height}" in name:
+                    project.SetCurrentTimeline(get_timeline_by_name(name))
+                    media_pool.AppendToTimeline(clip)
 
-# # 3. 新建多条时间线
-# # 拿到机位 bin 下所有 clip 的分辨率信息，create new empty timeline.
-# for sub_folder in root_folder.GetSubFolderList():
-#     # 排除 _Timeline Bin
-#     if sub_folder.GetName() == "_Timeline":
-#         break
-#
-#     # 拿到机位 bin 下所有 clip 的分辨率信息 assign to all_clips_resolution 这个 list.
-#     all_clips_resolution = []  # Camera 机位 bin 下所有 clip 的 resolution 信息
-#     for clip in sub_folder.GetClipList():
-#         all_clips_resolution.append(clip.GetClipProperty()["Resolution"])
-#     all_clips_resolution: list[str] = list(dict.fromkeys(all_clips_resolution))  # 移除 list 中的重复项
-#
-#     # 根据 all_clips_resolution 里的分辨率信息新建时间线
-#     for res in all_clips_resolution:
-#         if res.split("x")[1] <= "1080":
-#             timeline_name = f"{sub_folder.GetName()}_{res}"
-#             create_new_timeline(timeline_name, res.split("x")[0], res.split("x")[1])
-#         else:
-#             clip_width = str(int(int(res.split('x')[0]) / 2))
-#             clip_height = str(int(int(res.split('x')[1]) / 2))
-#             timeline_name = f"{sub_folder.GetName()}_{clip_width}x{clip_height}"
-#             create_new_timeline(timeline_name, clip_width, clip_height)
-#
-# # 4. 把每条素材 append 到对应的时间线
-# for sub_folder in root_folder.GetSubFolderList():
-#     # 排除 _Timeline Bin
-#     if sub_folder.GetName() == "_Timeline":
-#         break
-#     # if sub_folder.GetName() == "Ronin_4D#1":
-#     for clip in sub_folder.GetClipList():
-#         clip_res: str = clip.GetClipProperty()["Resolution"]
-#         # print(clip_res)
-#
-#         timeline_number = project.GetTimelineCount()
-#         for i in range(timeline_number):
-#             existing_timeline = project.GetTimelineByIndex(i + 1)
-#             # print(existing_timeline.GetName())
-#             if existing_timeline.GetName().split("x")[1] <= "1080":
-#                 timeline_width = existing_timeline.GetSetting()['timelineResolutionWidth']
-#                 timeline_height = existing_timeline.GetSetting()['timelineResolutionHeight']
-#                 # print(f"timeline_width+timeline_height: {timeline_width}x{timeline_height}")
-#                 if clip_res == f"{timeline_width}x{timeline_height}":
-#                     project.SetCurrentTimeline(existing_timeline)
-#                     media_pool.AppendToTimeline(clip)
-#             else:
-#                 timeline_width = str(int(existing_timeline.GetSetting()['timelineResolutionWidth']) * 2)
-#                 timeline_height = str(int(existing_timeline.GetSetting()['timelineResolutionHeight']) * 2)
-#                 if clip_res == f"{timeline_width}x{timeline_height}":
-#                     project.SetCurrentTimeline(existing_timeline)
-#                     media_pool.AppendToTimeline(clip)
 
 if __name__ == "__main__":
-    # # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    # sub_folders_name = get_sub_folder_name(sub_folders_full_path)
-    # create_bin(sub_folders_name)
-    # import_clip()
+    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+    sub_folders_name = get_sub_folder_name(sub_folders_full_path)
+    create_bin(sub_folders_name)
+    import_clip()
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
@@ -189,5 +155,5 @@ if __name__ == "__main__":
             timeline_height = int(int(res.split("x")[1]) / 2)
             create_new_timeline(res, timeline_width, timeline_height)
 
-    # for i in get_all_timeline():
-    #     print(i.GetName())
+    # 导入素材到对应时间线
+    append_to_timeline()
