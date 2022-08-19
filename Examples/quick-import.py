@@ -145,7 +145,6 @@ if __name__ == "__main__":
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
-        print(f"Original RESOLUTION: {res}")
         if int(res.split("x")[1]) <= 1080:
             timeline_width = (res.split("x")[0])
             timeline_height = (res.split("x")[1])
