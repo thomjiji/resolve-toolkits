@@ -121,7 +121,7 @@ def get_timeline_by_name(timeline_name: str):
     """Get timeline object by name."""
     all_timeline = get_all_timeline()
     timeline_dict = {timeline.GetName(): timeline for timeline in all_timeline}
-    return timeline_dict.get(timeline_name)
+    return timeline_dict.get(timeline_name, "")
 
 
 def append_to_timeline() -> None:
