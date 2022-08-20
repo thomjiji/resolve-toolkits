@@ -122,7 +122,7 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
             create_and_change_timeline(timeline_name, str(width), str(height))
         else:
             current_timeline = project.GetCurrentTimeline()
-            new_name = f"{current_timeline.GetName()}_{str(width * 2)}x{str(height * 2)}"
+            new_name = f"{current_timeline.GetName()}_{str(width)}x{str(height)}"
             current_timeline.SetName(new_name)
 
 
@@ -138,19 +138,20 @@ def append_to_timeline() -> None:
     all_timeline_name = [timeline.GetName() for timeline in get_all_timeline()]
     for sub_folder in root_folder.GetSubFolderList():
         for clip in sub_folder.GetClipList():
-            clip_width = clip.GetClipProperty("Resolution").split("x")[0]
-            clip_height = clip.GetClipProperty("Resolution").split("x")[1]
-            for name in all_timeline_name:
-                if f"{clip_width}x{clip_height}" in name:
-                    project.SetCurrentTimeline(get_timeline_by_name(name))
-                    media_pool.AppendToTimeline(clip)
+            if clip.GetClipProperty("type") == "Video" or clip.GetClipProperty("type") == "Video + Audio":
+                clip_width = clip.GetClipProperty("Resolution").split("x")[0]
+                clip_height = clip.GetClipProperty("Resolution").split("x")[1]
+                for name in all_timeline_name:
+                    if f"{clip_width}x{clip_height}" in name:
+                        project.SetCurrentTimeline(get_timeline_by_name(name))
+                        media_pool.AppendToTimeline(clip)
 
 
 if __name__ == "__main__":
-    # # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    # sub_folders_name = get_sub_folder_name(sub_folders_full_path)
-    # create_bin(sub_folders_name)
-    # import_clip_new()
+    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+    sub_folders_name = get_sub_folder_name(sub_folders_full_path)
+    create_bin(sub_folders_name)
+    import_clip_new()
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
