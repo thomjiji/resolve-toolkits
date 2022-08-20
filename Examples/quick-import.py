@@ -138,33 +138,32 @@ def append_to_timeline() -> None:
     all_timeline_name = [timeline.GetName() for timeline in get_all_timeline()]
     for sub_folder in root_folder.GetSubFolderList():
         for clip in sub_folder.GetClipList():
-            if clip.GetClipProperty("type") == "Video" or clip.GetClipProperty("type") == "Video + Audio":
-                clip_width = clip.GetClipProperty("Resolution").split("x")[0]
-                clip_height = clip.GetClipProperty("Resolution").split("x")[1]
-                for name in all_timeline_name:
-                    if f"{clip_width}x{clip_height}" in name:
-                        project.SetCurrentTimeline(get_timeline_by_name(name))
-                        media_pool.AppendToTimeline(clip)
+            clip_width = clip.GetClipProperty("Resolution").split("x")[0]
+            clip_height = clip.GetClipProperty("Resolution").split("x")[1]
+            for name in all_timeline_name:
+                if f"{clip_width}x{clip_height}" in name:
+                    project.SetCurrentTimeline(get_timeline_by_name(name))
+                    media_pool.AppendToTimeline(clip)
 
 
 if __name__ == "__main__":
-    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    sub_folders_name = get_sub_folder_name(sub_folders_full_path)
-    create_bin(sub_folders_name)
-    import_clip_new()
+    # # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+    # sub_folders_name = get_sub_folder_name(sub_folders_full_path)
+    # create_bin(sub_folders_name)
+    # import_clip_new()
 
-    # # 根据媒体池所有的素材分辨率新建不同的时间线。
-    # for res in get_resolution():
-    #     if "x" not in res:
-    #         continue
-    #     if int(res.split("x")[1]) <= 1080:
-    #         timeline_width = (res.split("x")[0])
-    #         timeline_height = (res.split("x")[1])
-    #         create_new_timeline(res, timeline_width, timeline_height)
-    #     else:
-    #         timeline_width = int(int(res.split("x")[0]) / 2)
-    #         timeline_height = int(int(res.split("x")[1]) / 2)
-    #         create_new_timeline(res, timeline_width, timeline_height)
-    #
-    # # 导入素材到对应时间线
-    # append_to_timeline()
+    # 根据媒体池所有的素材分辨率新建不同的时间线。
+    for res in get_resolution():
+        if "x" not in res:
+            continue
+        if int(res.split("x")[1]) <= 1080:
+            timeline_width = (res.split("x")[0])
+            timeline_height = (res.split("x")[1])
+            create_new_timeline(res, timeline_width, timeline_height)
+        else:
+            timeline_width = int(int(res.split("x")[0]) / 2)
+            timeline_height = int(int(res.split("x")[1]) / 2)
+            create_new_timeline(res, timeline_width, timeline_height)
+
+    # 导入素材到对应时间线
+    append_to_timeline()
