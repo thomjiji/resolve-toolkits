@@ -5,7 +5,7 @@ from typing import List, Union
 import sys
 
 media_path: str = sys.argv[1]
-INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
+INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]  # TODO, 小写的情况还待考虑进去
 
 # Initialize Resolve native API
 resolve = GetResolve()
@@ -24,23 +24,6 @@ def absolute_file_paths(directory) -> list:
         for f in filenames:
             absolute_file_path_list.append(os.path.abspath(os.path.join(directory_path, f)))
     return absolute_file_path_list
-
-
-def import_clip_new() -> None:
-    absolute_file_paths(media_path).sort()
-    for index, path in enumerate(absolute_file_paths(media_path)):
-        print(f"{index}: {path}")
-        if os.path.splitext(path)[1].replace(".", "") not in INVALID_EXTENSION:
-            current_folder = get_sub_folder_by_name(f"{path.split('/')[path.split('/').index('素材') + 1]}")
-            media_pool.SetCurrentFolder(current_folder)
-            media_pool.ImportMedia(path)
-
-
-def get_sub_folder_by_name(sub_folder_name: str):
-    # for sub_folder in root_folder.GetSubFolderList():
-    all_sub_folder = root_folder.GetSubFolderList()
-    sub_folder_dict = {sub_folder.GetName(): sub_folder for sub_folder in all_sub_folder}
-    return sub_folder_dict.get(sub_folder_name, "")
 
 
 def get_sub_folder_name(source_media_full_path: List[str]) -> List[str]:
@@ -70,6 +53,22 @@ def import_clip() -> None:
         if sub_folder.GetName() == "_Timeline":
             break
         media_storage.AddItemListToMediaPool(sub_folders_full_path[count])
+
+
+def import_clip_new() -> None:
+    media_full_path_list = absolute_file_paths(media_path)
+    filename_and_fullpath_dict = {os.path.splitext(path)[0].replace(".", "").split('/')[-1]: path for path in
+                                  media_full_path_list}
+
+    filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
+    filename_and_fullpath_keys.sort()
+    filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
+
+    for path in filename_and_fullpath_value:
+        if path.split(".")[-1] not in INVALID_EXTENSION:
+            current_folder = get_sub_folder_by_name(f"{path.split('/')[path.split('/').index('素材') + 1]}")
+            media_pool.SetCurrentFolder(current_folder)
+            media_pool.ImportMedia(path)
 
 
 def get_resolution() -> list:
@@ -136,6 +135,13 @@ def get_timeline_by_name(timeline_name: str):
     all_timeline = get_all_timeline()
     timeline_dict = {timeline.GetName(): timeline for timeline in all_timeline}
     return timeline_dict.get(timeline_name, "")
+
+
+def get_sub_folder_by_name(sub_folder_name: str):
+    """Get folder object by name."""
+    all_sub_folder = root_folder.GetSubFolderList()
+    sub_folder_dict = {sub_folder.GetName(): sub_folder for sub_folder in all_sub_folder}
+    return sub_folder_dict.get(sub_folder_name, "")
 
 
 def append_to_timeline() -> None:
