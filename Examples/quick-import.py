@@ -14,21 +14,26 @@ project = project_manager.GetCurrentProject()
 media_storage = resolve.GetMediaStorage()
 media_pool = project.GetMediaPool()
 root_folder = media_pool.GetRootFolder()
-sub_folders_full_path: List[str] = media_storage.GetSubFolderList(media_path)
+
+sub_folders_full_path = media_storage.GetSubFolderList(media_path)
 
 
-def absolute_file_paths(directory):
-    for dirpath, _, filenames in os.walk(directory):
+def absolute_file_paths(directory) -> list:
+    absolute_file_path_list = []
+    for directory_path, _, filenames in os.walk(directory):
         for f in filenames:
-            yield os.path.abspath(os.path.join(dirpath, f))
+            absolute_file_path_list.append(os.path.abspath(os.path.join(directory_path, f)))
+    return absolute_file_path_list
 
 
-def import_clip_new():
-    for i in absolute_file_paths(media_path):
-        if i.split(".")[-1] not in INVALID_EXTENSION:
-            current_folder = get_sub_folder_by_name(f"{i.split('/')[i.split('/').index('素材') + 1]}")
+def import_clip_new() -> None:
+    absolute_file_paths(media_path).sort()
+    for index, path in enumerate(absolute_file_paths(media_path)):
+        print(f"{index}: {path}")
+        if os.path.splitext(path)[1].replace(".", "") not in INVALID_EXTENSION:
+            current_folder = get_sub_folder_by_name(f"{path.split('/')[path.split('/').index('素材') + 1]}")
             media_pool.SetCurrentFolder(current_folder)
-            media_pool.ImportMedia(i)
+            media_pool.ImportMedia(path)
 
 
 def get_sub_folder_by_name(sub_folder_name: str):
