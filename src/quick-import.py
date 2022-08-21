@@ -2,7 +2,6 @@
 import os
 import sys
 from typing import List
-
 from resolve_api_init.python_get_resolve import GetResolve
 
 media_path: str = sys.argv[1]
