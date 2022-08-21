@@ -1,7 +1,7 @@
 # Import modules for Resolve native API
 import os
-from python_get_resolve import GetResolve
-from typing import List, Union
+from resolve_api_samples.Examples.python_get_resolve import GetResolve
+from typing import List
 import sys
 
 media_path: str = sys.argv[1]
