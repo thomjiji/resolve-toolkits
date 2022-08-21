@@ -47,12 +47,15 @@ def create_bin(sub_folders_name: list) -> None:
 
 def import_clip() -> None:
     """Import footage from media storage into the corresponding sub-folder of the media pool root folder."""
-    for count, sub_folder in enumerate(root_folder.GetSubFolderList()):
-        media_pool.SetCurrentFolder(sub_folder)
-        # 导入素材的时候排除 _Timeline 这个目的地 Bin
-        if sub_folder.GetName() == "_Timeline":
-            break
-        media_storage.AddItemListToMediaPool(sub_folders_full_path[count])
+    for cam_path in sub_folders_full_path:
+        filename_and_fullpath_dict = {os.path.splitext(path)[0].replace(".", "").split('/')[-1]: path for path in
+                                      absolute_file_paths(cam_path) if path.split('.')[-1] not in INVALID_EXTENSION}
+        filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
+        filename_and_fullpath_keys.sort()
+        filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
+        current_folder = get_sub_folder_by_name(f"{cam_path.split('/')[cam_path.split('/').index('素材') + 1]}")
+        media_pool.SetCurrentFolder(current_folder)
+        media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
 
 
 def import_clip_new() -> None:
