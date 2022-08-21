@@ -31,7 +31,7 @@ def get_sub_folder_name(source_media_full_path: List[str]) -> List[str]:
     Extract sub-folder name from media storage full path.
     For creating sub-folder in the media pool.
     """
-    sub_folders_name: List[str] = []
+    sub_folders_name = []
     for i in source_media_full_path:
         split_full_path = i.split("/")
         sub_folders_name.append(split_full_path[-1])
@@ -58,17 +58,15 @@ def import_clip() -> None:
 def import_clip_new() -> None:
     media_full_path_list = absolute_file_paths(media_path)
     filename_and_fullpath_dict = {os.path.splitext(path)[0].replace(".", "").split('/')[-1]: path for path in
-                                  media_full_path_list}
-
+                                  media_full_path_list if path.split('.')[-1] not in INVALID_EXTENSION}
     filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
     filename_and_fullpath_keys.sort()
     filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
 
     for path in filename_and_fullpath_value:
-        if path.split(".")[-1] not in INVALID_EXTENSION:
-            current_folder = get_sub_folder_by_name(f"{path.split('/')[path.split('/').index('素材') + 1]}")
-            media_pool.SetCurrentFolder(current_folder)
-            media_pool.ImportMedia(path)
+        current_folder = get_sub_folder_by_name(f"{path.split('/')[path.split('/').index('素材') + 1]}")
+        media_pool.SetCurrentFolder(current_folder)
+        media_pool.ImportMedia(path)
 
 
 def get_resolution() -> list:
