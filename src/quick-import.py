@@ -1,8 +1,9 @@
 # Import modules for Resolve native API
 import os
-from resolve_api_samples.Examples.python_get_resolve import GetResolve
-from typing import List
 import sys
+from typing import List
+
+from resolve_api_init.python_get_resolve import GetResolve
 
 media_path: str = sys.argv[1]
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]  # TODO, 小写的情况还待考虑进去
