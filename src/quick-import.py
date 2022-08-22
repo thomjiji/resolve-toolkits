@@ -1,6 +1,7 @@
 # Import modules for Resolve native API
 import os
 import sys
+import time
 from typing import List
 from resolve_api_init.python_get_resolve import GetResolve
 
@@ -46,7 +47,11 @@ def create_bin(sub_folders_name: list) -> None:
 
 
 def import_clip() -> None:
-    """Import footage from media storage into the corresponding sub-folder of the media pool root folder."""
+    """
+    Import footage from media storage into the corresponding sub-folder of the media
+    pool root folder.Filter out the files with suffix in the INVALID_EXTENSION list
+    before importing.
+    """
     for cam_path in sub_folders_full_path:
         filename_and_fullpath_dict = {os.path.splitext(path)[0].replace(".", "").split('/')[-1]: path for path in
                                       absolute_file_paths(cam_path) if path.split('.')[-1] not in INVALID_EXTENSION}
@@ -59,6 +64,10 @@ def import_clip() -> None:
 
 
 def import_clip_new() -> None:
+    """
+    Import footage from media storage into the corresponding sub-folder of the media
+    pool root folder one by one. Import speed is much lower.
+    """
     media_full_path_list = absolute_file_paths(media_path)
     filename_and_fullpath_dict = {os.path.splitext(path)[0].replace(".", "").split('/')[-1]: path for path in
                                   media_full_path_list if path.split('.')[-1] not in INVALID_EXTENSION}
@@ -163,7 +172,7 @@ if __name__ == "__main__":
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
     sub_folders_name = get_sub_folder_name(sub_folders_full_path)
     create_bin(sub_folders_name)
-    import_clip_new()
+    import_clip()
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
