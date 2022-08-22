@@ -16,7 +16,7 @@ media_storage = resolve.GetMediaStorage()
 media_pool = project.GetMediaPool()
 root_folder = media_pool.GetRootFolder()
 
-sub_folders_full_path = media_storage.GetSubFolderList(media_path)
+subfolders_full_path = media_storage.GetSubFolderList(media_path)
 
 
 def absolute_file_paths(directory) -> list:
@@ -27,21 +27,21 @@ def absolute_file_paths(directory) -> list:
     return absolute_file_path_list
 
 
-def get_sub_folder_name(source_media_full_path: List[str]) -> List[str]:
+def get_subfolder_name(source_media_full_path: List[str]) -> List[str]:
     """
     Extract sub-folder name from media storage full path.
     For creating sub-folder in the media pool.
     """
-    sub_folders_name = []
+    subfolders_name = []
     for i in source_media_full_path:
         split_full_path = i.split("/")
-        sub_folders_name.append(split_full_path[-1])
-    return sub_folders_name
+        subfolders_name.append(split_full_path[-1])
+    return subfolders_name
 
 
-def create_bin(sub_folders_name: list) -> None:
+def create_bin(subfolders_name: list) -> None:
     """Create sub-folder in media pool."""
-    for i in sub_folders_name:
+    for i in subfolders_name:
         media_pool.AddSubFolder(root_folder, i)
     media_pool.AddSubFolder(root_folder, "_Timeline")
 
@@ -52,13 +52,13 @@ def import_clip() -> None:
     pool root folder.Filter out the files with suffix in the INVALID_EXTENSION list
     before importing.
     """
-    for cam_path in sub_folders_full_path:
+    for cam_path in subfolders_full_path:
         filename_and_fullpath_dict = {os.path.splitext(path)[0].replace(".", "").split('/')[-1]: path for path in
                                       absolute_file_paths(cam_path) if path.split('.')[-1] not in INVALID_EXTENSION}
         filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
         filename_and_fullpath_keys.sort()
         filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
-        current_folder = get_sub_folder_by_name(f"{cam_path.split('/')[cam_path.split('/').index('素材') + 1]}")
+        current_folder = get_subfolder_by_name(f"{cam_path.split('/')[cam_path.split('/').index('素材') + 1]}")
         media_pool.SetCurrentFolder(current_folder)
         media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
 
@@ -76,7 +76,7 @@ def import_clip_new() -> None:
     filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
 
     for path in filename_and_fullpath_value:
-        current_folder = get_sub_folder_by_name(f"{path.split('/')[path.split('/').index('素材') + 1]}")
+        current_folder = get_subfolder_by_name(f"{path.split('/')[path.split('/').index('素材') + 1]}")
         media_pool.SetCurrentFolder(current_folder)
         media_pool.ImportMedia(path)
 
@@ -147,18 +147,18 @@ def get_timeline_by_name(timeline_name: str):
     return timeline_dict.get(timeline_name, "")
 
 
-def get_sub_folder_by_name(sub_folder_name: str):
-    """Get folder object by name."""
-    all_sub_folder = root_folder.GetSubFolderList()
-    sub_folder_dict = {sub_folder.GetName(): sub_folder for sub_folder in all_sub_folder}
-    return sub_folder_dict.get(sub_folder_name, "")
+def get_subfolder_by_name(subfolder_name: str):
+    """Get subfolder (folder object) under the root folder in the media pool."""
+    all_subfolder = root_folder.GetSubFolderList()
+    subfolder_dict = {subfolder.GetName(): subfolder for subfolder in all_subfolder}
+    return subfolder_dict.get(subfolder_name, "")
 
 
 def append_to_timeline() -> None:
     """Append to timeline"""
     all_timeline_name = [timeline.GetName() for timeline in get_all_timeline()]
-    for sub_folder in root_folder.GetSubFolderList():
-        for clip in sub_folder.GetClipList():
+    for subfolder in root_folder.GetSubFolderList():
+        for clip in subfolder.GetClipList():
             if clip.GetClipProperty("type") == "Video" or clip.GetClipProperty("type") == "Video + Audio":
                 clip_width = clip.GetClipProperty("Resolution").split("x")[0]
                 clip_height = clip.GetClipProperty("Resolution").split("x")[1]
@@ -170,8 +170,8 @@ def append_to_timeline() -> None:
 
 if __name__ == "__main__":
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    sub_folders_name = get_sub_folder_name(sub_folders_full_path)
-    create_bin(sub_folders_name)
+    subfolders_name = get_subfolder_name(subfolders_full_path)
+    create_bin(subfolders_name)
     import_clip()
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
