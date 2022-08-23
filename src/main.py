@@ -1,7 +1,6 @@
 # Import modules for Resolve native API
 import os
 import sys
-import time
 from typing import List
 from resolve_api_init.python_get_resolve import GetResolve
 
@@ -170,24 +169,24 @@ def append_to_timeline() -> None:
                         media_pool.AppendToTimeline(clip)
 
 
-if __name__ == "__main__":
-    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    subfolders_name = get_subfolder_name(media_fullpath_list)
-    create_bin(subfolders_name)
-    import_clip_new()
-
-    # 根据媒体池所有的素材分辨率新建不同的时间线。
-    for res in get_resolution():
-        if "x" not in res:
-            continue
-        if int(res.split("x")[1]) <= 1080:
-            timeline_width = (res.split("x")[0])
-            timeline_height = (res.split("x")[1])
-            create_new_timeline(res, timeline_width, timeline_height)
-        else:
-            timeline_width = int(int(res.split("x")[0]) / 2)
-            timeline_height = int(int(res.split("x")[1]) / 2)
-            create_new_timeline(res, timeline_width, timeline_height)
-
-    # 导入素材到对应时间线
-    append_to_timeline()
+# if __name__ == "__main__":
+#     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+#     subfolders_name = get_subfolder_name(media_fullpath_list)
+#     create_bin(subfolders_name)
+#     import_clip_new()
+#
+#     # 根据媒体池所有的素材分辨率新建不同的时间线。
+#     for res in get_resolution():
+#         if "x" not in res:
+#             continue
+#         if int(res.split("x")[1]) <= 1080:
+#             timeline_width = (res.split("x")[0])
+#             timeline_height = (res.split("x")[1])
+#             create_new_timeline(res, timeline_width, timeline_height)
+#         else:
+#             timeline_width = int(int(res.split("x")[0]) / 2)
+#             timeline_height = int(int(res.split("x")[1]) / 2)
+#             create_new_timeline(res, timeline_width, timeline_height)
+#
+#     # 导入素材到对应时间线
+#     append_to_timeline()
