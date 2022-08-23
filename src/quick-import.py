@@ -58,7 +58,8 @@ def import_clip() -> None:
         filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
         filename_and_fullpath_keys.sort()
         filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
-        current_folder = get_subfolder_by_name(f"{cam_path.split('/')[cam_path.split('/').index('素材') + 1]}")
+        media_parent_dir = media_path.split('/')[-1]
+        current_folder = get_subfolder_by_name(f"{cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]}")
         media_pool.SetCurrentFolder(current_folder)
         media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
 
@@ -76,7 +77,8 @@ def import_clip_new() -> None:
     filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
 
     for path in filename_and_fullpath_value:
-        current_folder = get_subfolder_by_name(f"{path.split('/')[path.split('/').index('素材') + 1]}")
+        media_parent_dir = media_path.split('/')[-1]
+        current_folder = get_subfolder_by_name(f"{path.split('/')[path.split('/').index(media_parent_dir) + 1]}")
         media_pool.SetCurrentFolder(current_folder)
         media_pool.ImportMedia(path)
 
