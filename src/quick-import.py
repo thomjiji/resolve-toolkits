@@ -5,7 +5,7 @@ import time
 from typing import List
 from resolve_api_init.python_get_resolve import GetResolve
 
-media_path: str = sys.argv[1]
+media_parent_path: str = sys.argv[1]
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]  # TODO, 小写的情况还待考虑进去
 
 # Initialize Resolve native API
@@ -16,7 +16,7 @@ media_storage = resolve.GetMediaStorage()
 media_pool = project.GetMediaPool()
 root_folder = media_pool.GetRootFolder()
 
-subfolders_full_path = media_storage.GetSubFolderList(media_path)
+media_fullpath_list = media_storage.GetSubFolderList(media_parent_path)
 
 
 def absolute_file_paths(directory) -> list:
@@ -52,13 +52,13 @@ def import_clip() -> None:
     pool root folder.Filter out the files with suffix in the INVALID_EXTENSION list
     before importing.
     """
-    for cam_path in subfolders_full_path:
+    for cam_path in media_fullpath_list:
         filename_and_fullpath_dict = {os.path.splitext(path)[0].replace(".", "").split('/')[-1]: path for path in
                                       absolute_file_paths(cam_path) if path.split('.')[-1] not in INVALID_EXTENSION}
         filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
         filename_and_fullpath_keys.sort()
         filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
-        media_parent_dir = media_path.split('/')[-1]
+        media_parent_dir = media_parent_path.split('/')[-1]
         current_folder = get_subfolder_by_name(f"{cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]}")
         media_pool.SetCurrentFolder(current_folder)
         media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
@@ -69,7 +69,7 @@ def import_clip_new() -> None:
     Import footage from media storage into the corresponding sub-folder of the media
     pool root folder one by one. Import speed is much lower.
     """
-    media_full_path_list = absolute_file_paths(media_path)
+    media_full_path_list = absolute_file_paths(media_parent_path)
     filename_and_fullpath_dict = {os.path.splitext(path)[0].replace(".", "").split('/')[-1]: path for path in
                                   media_full_path_list if path.split('.')[-1] not in INVALID_EXTENSION}
     filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
@@ -77,7 +77,7 @@ def import_clip_new() -> None:
     filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
 
     for path in filename_and_fullpath_value:
-        media_parent_dir = media_path.split('/')[-1]
+        media_parent_dir = media_parent_path.split('/')[-1]
         current_folder = get_subfolder_by_name(f"{path.split('/')[path.split('/').index(media_parent_dir) + 1]}")
         media_pool.SetCurrentFolder(current_folder)
         media_pool.ImportMedia(path)
@@ -172,9 +172,9 @@ def append_to_timeline() -> None:
 
 if __name__ == "__main__":
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    subfolders_name = get_subfolder_name(subfolders_full_path)
+    subfolders_name = get_subfolder_name(media_fullpath_list)
     create_bin(subfolders_name)
-    import_clip()
+    import_clip_new()
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
