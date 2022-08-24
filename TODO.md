@@ -1,0 +1,5 @@
+- 检查当前 machine 上的 render preset 里是否有出默认 preset 之外的自定义的 preset：
+  - 如果有，检查该 preset 的所有参数是否正确：
+    - 如果正确，那就信任该 preset，以此作为 project 里所有时间线的渲染 preset。
+    - 如果不正确，那么修改对应的
+  - 如果没有，直接设置所有参数，并新建 preset。

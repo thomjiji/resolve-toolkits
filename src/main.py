@@ -2,9 +2,10 @@
 import os
 import sys
 from typing import List
-from resolve_init.python_get_resolve import GetResolve
+from resolve_init import GetResolve
 
 media_parent_path: str = sys.argv[1]
+proxy_parent_path: str = sys.argv[2]
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]  # TODO, 小写的情况还待考虑进去
 
 # Initialize Resolve native API
@@ -58,7 +59,8 @@ def import_clip() -> None:
         filename_and_fullpath_keys.sort()
         filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
         media_parent_dir = media_parent_path.split('/')[-1]
-        current_folder = get_subfolder_by_name(f"{cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]}")
+        current_folder = get_subfolder_by_name(
+            f"{cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]}")
         media_pool.SetCurrentFolder(current_folder)
         media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
 
@@ -169,24 +171,64 @@ def append_to_timeline() -> None:
                         media_pool.AppendToTimeline(clip)
 
 
+def create_rendering_preset():
+    proxy_preset = project.GetRenderPresetList()
+    if len(proxy_preset) < 32:
+        project.SetCurrentRenderMode(0)
+        project.SetCurrentRenderFormatAndCodec("mov", "H265")
+        rendering_setting = {
+            "TargetDir": proxy_parent_path,
+            "ExportVideo": True,
+            "ExportAudio": True,
+            "VideoQuality": 5000,
+            "EncodingProfile": "Main",
+            "MultiPassEncode": False,
+            "AudioCodec": "aac",
+            "AudioBitDepth": 16,
+            "AudioSampleRate": 48000,
+            "ColorSpaceTag": "Same as Project",
+            "GammaTag": "Same as Project",
+        }
+        project.SetRenderSettings(rendering_setting)
+
+
+def test():
+    # resolve.OpenPage("deliver")
+    # Loading Proxy_H.265 preset.
+    proxy_preset = project.GetRenderPresetList()[-1]  # 需要提前 set 好 preset list：把 preset 拷到该 machine 上来
+    project.LoadRenderPreset(proxy_preset)
+
+    # 把时间线分别添加到渲染队列
+    for timeline in resolve.get_all_timeline():
+        project.SetCurrentTimeline(timeline)
+
+        rendering_setting = {'TargetDir': f"{proxy_parent_path}"}
+        project.SetRenderSettings(rendering_setting)
+        project.AddRenderJob()
+
+
 if __name__ == "__main__":
-    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    subfolders_name = get_subfolder_name(media_fullpath_list)
-    create_bin(subfolders_name)
-    import_clip_new()
+    if len(sys.argv) < 3:
+        print("usage: ")
+        sys.exit()
+    else:
+        # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+        subfolders_name = get_subfolder_name(media_fullpath_list)
+        create_bin(subfolders_name)
+        import_clip_new()
 
-    # 根据媒体池所有的素材分辨率新建不同的时间线。
-    for res in get_resolution():
-        if "x" not in res:
-            continue
-        if int(res.split("x")[1]) <= 1080:
-            timeline_width = (res.split("x")[0])
-            timeline_height = (res.split("x")[1])
-            create_new_timeline(res, timeline_width, timeline_height)
-        else:
-            timeline_width = int(int(res.split("x")[0]) / 2)
-            timeline_height = int(int(res.split("x")[1]) / 2)
-            create_new_timeline(res, timeline_width, timeline_height)
+        # 根据媒体池所有的素材分辨率新建不同的时间线。
+        for res in get_resolution():
+            if "x" not in res:
+                continue
+            if int(res.split("x")[1]) <= 1080:
+                timeline_width = (res.split("x")[0])
+                timeline_height = (res.split("x")[1])
+                create_new_timeline(res, timeline_width, timeline_height)
+            else:
+                timeline_width = int(int(res.split("x")[0]) / 2)
+                timeline_height = int(int(res.split("x")[1]) / 2)
+                create_new_timeline(res, timeline_width, timeline_height)
 
-    # 导入素材到对应时间线
-    append_to_timeline()
+        # 导入素材到对应时间线
+        append_to_timeline()
