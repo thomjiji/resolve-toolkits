@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
+
 # Import modules for Resolve native API
 import os
 import sys
-from pprint import pprint
 from typing import List
 from resolve_init import GetResolve
 
@@ -29,11 +30,7 @@ def get_subfolder_name(source_media_full_path: List[str]) -> List[str]:
     Extract sub-folder name from media storage full path.
     For creating sub-folder in the media pool.
     """
-    subfolders_name = []
-    for i in source_media_full_path:
-        split_full_path = i.split("/")
-        subfolders_name.append(split_full_path[-1])
-    return subfolders_name
+    return [os.path.split(i)[1] for i in source_media_full_path]
 
 
 def create_bin(subfolders_name: list) -> None:
@@ -43,19 +40,28 @@ def create_bin(subfolders_name: list) -> None:
     media_pool.AddSubFolder(root_folder, "_Timeline")
 
 
-def import_clip() -> None:
+def import_clip(path: str) -> None:
     """
-    Import footage from media storage into the corresponding sub-folder of the media
-    pool root folder.Filter out the files with suffix in the INVALID_EXTENSION list
+    Import footage from media storage into the corresponding subfolder of the media
+    pool root folder. Filter out the files with suffix in the INVALID_EXTENSION list
     before importing.
+
+    Args:
+        path (str): source media parent path, such as "素材".
+
+    Returns:
+        None
     """
+    media_fullpath_list = media_storage.GetSubFolderList(path)
+
     for cam_path in media_fullpath_list:
-        filename_and_fullpath_dict = {os.path.splitext(path)[0].replace(".", "").split('/')[-1]: path for path in
-                                      absolute_file_paths(cam_path) if path.split('.')[-1] not in INVALID_EXTENSION}
+        filename_and_fullpath_dict = {os.path.basename(os.path.splitext(path)[0]): path for path in
+                                      absolute_file_paths(cam_path) if
+                                      os.path.splitext(path)[-1].replace(".", "") not in INVALID_EXTENSION}
         filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
         filename_and_fullpath_keys.sort()
         filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
-        media_parent_dir = media_parent_path.split('/')[-1]
+        media_parent_dir = os.path.basename(path)
         current_folder = get_subfolder_by_name(
             f"{cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]}")
         media_pool.SetCurrentFolder(current_folder)
@@ -194,17 +200,20 @@ def add_render_job():
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python3 proxy.py [media path] [proxy path]\nPlease ensure this two directory exist.")
+        print("Usage: python3 proxy.py [media path] [proxy.py path]\nPlease ensure this two directories exist.")
         sys.exit()
     else:
         media_parent_path: str = sys.argv[1]
         proxy_parent_path: str = sys.argv[2]
+        if not os.path.exists(proxy_parent_path):
+            print("Usage: python3 proxy.py [media path] [proxy.py path]\nPlease ensure this two directory exist.")
+            sys.exit()
     media_fullpath_list = media_storage.GetSubFolderList(media_parent_path)
 
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
     subfolders_name = get_subfolder_name(media_fullpath_list)
     create_bin(subfolders_name)
-    import_clip()
+    import_clip(media_parent_path)
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
