@@ -34,7 +34,14 @@ def get_subfolder_name(source_media_full_path: List[str]) -> List[str]:
 
 
 def create_bin(subfolders_name: list) -> None:
-    """Create sub-folder in media pool."""
+    """Create sub-folder in media pool.
+
+    Args:
+        subfolders_name (list): The name of the bin to be created.
+
+    Returns:
+        None
+    """
     for i in subfolders_name:
         media_pool.AddSubFolder(root_folder, i)
     media_pool.AddSubFolder(root_folder, "_Timeline")
@@ -47,7 +54,7 @@ def import_clip(path: str) -> None:
     before importing.
 
     Args:
-        path (str): source media parent path, such as "素材".
+        path (string): source media parent path, such as "素材".
 
     Returns:
         None
@@ -68,23 +75,30 @@ def import_clip(path: str) -> None:
         media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
 
 
-def import_clip_new() -> None:
+def import_clip_new(path: str) -> None:
     """
     Import footage from media storage into the corresponding sub-folder of the media
     pool root folder one by one. Import speed is much lower.
+
+    Args:
+        path (string): source media parent path, such as "素材".
+
+    Returns:
+        None
     """
-    media_full_path_list = absolute_file_paths(media_parent_path)
-    filename_and_fullpath_dict = {os.path.splitext(path)[0].replace(".", "").split('/')[-1]: path for path in
-                                  media_full_path_list if path.split('.')[-1] not in INVALID_EXTENSION}
+    filename_and_fullpath_dict = {os.path.basename(os.path.splitext(path)[0]): path for path in
+                                  absolute_file_paths(path) if
+                                  os.path.splitext(path)[-1].replace(".", "") not in INVALID_EXTENSION}
     filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
     filename_and_fullpath_keys.sort()
     filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
 
-    for path in filename_and_fullpath_value:
-        media_parent_dir = media_parent_path.split('/')[-1]
-        current_folder = get_subfolder_by_name(f"{path.split('/')[path.split('/').index(media_parent_dir) + 1]}")
+    for abs_media_path in filename_and_fullpath_value:
+        media_parent_dir = os.path.basename(path)
+        current_folder = get_subfolder_by_name(
+            f"{abs_media_path.split('/')[abs_media_path.split('/').index(media_parent_dir) + 1]}")
         media_pool.SetCurrentFolder(current_folder)
-        media_pool.ImportMedia(path)
+        media_pool.ImportMedia(abs_media_path)
 
 
 def get_resolution() -> list:
@@ -127,6 +141,14 @@ def create_new_timeline(timeline_name: str, width: int, height: int) -> bool:
     """
     Create new timeline in the _Timeline bin (the last folder under root folder).
     Check timeline duplication.
+
+    Args:
+        timeline_name (string):
+        width (integer):
+        height (integer):
+
+    Returns:
+         Bool
     """
     media_pool.SetCurrentFolder(root_folder.GetSubFolderList()[-1])  # SetCurrentFolder 到 _Timeline bin 把时间线都建在这
 
@@ -213,7 +235,7 @@ if __name__ == "__main__":
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
     subfolders_name = get_subfolder_name(media_fullpath_list)
     create_bin(subfolders_name)
-    import_clip(media_parent_path)
+    import_clip_new(media_parent_path)
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
