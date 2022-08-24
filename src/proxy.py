@@ -5,13 +5,6 @@ from pprint import pprint
 from typing import List
 from resolve_init import GetResolve
 
-if len(sys.argv) < 3:
-    print("Usage: python3 proxy.py [media path] [proxy path]\nPlease ensure this two directory exist.")
-    sys.exit()
-else:
-    media_parent_path: str = sys.argv[1]
-    proxy_parent_path: str = sys.argv[2]
-
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]  # TODO, 小写的情况还待考虑进去
 
 # Initialize Resolve native API
@@ -21,8 +14,6 @@ project = project_manager.GetCurrentProject()
 media_storage = resolve.GetMediaStorage()
 media_pool = project.GetMediaPool()
 root_folder = media_pool.GetRootFolder()
-
-media_fullpath_list = media_storage.GetSubFolderList(media_parent_path)
 
 
 def absolute_file_paths(directory) -> list:
@@ -202,6 +193,15 @@ def add_render_job():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Usage: python3 proxy.py [media path] [proxy path]\nPlease ensure this two directory exist.")
+        sys.exit()
+    else:
+        media_parent_path: str = sys.argv[1]
+        proxy_parent_path: str = sys.argv[2]
+
+    media_fullpath_list = media_storage.GetSubFolderList(media_parent_path)
+
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
     subfolders_name = get_subfolder_name(media_fullpath_list)
     create_bin(subfolders_name)
