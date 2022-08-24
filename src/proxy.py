@@ -184,7 +184,7 @@ def add_render_job():
         for timeline in get_all_timeline():
             project.SetCurrentTimeline(timeline)
             try:
-                os.mkdir(timeline.GetName())
+                os.mkdir(f"{proxy_parent_path}/{timeline.GetName()}")
             except FileExistsError:
                 pass
             rendering_setting = {'TargetDir': f"{proxy_parent_path}/{timeline.GetName()}"}
@@ -199,7 +199,6 @@ if __name__ == "__main__":
     else:
         media_parent_path: str = sys.argv[1]
         proxy_parent_path: str = sys.argv[2]
-
     media_fullpath_list = media_storage.GetSubFolderList(media_parent_path)
 
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
@@ -223,9 +222,13 @@ if __name__ == "__main__":
     # 导入素材到对应时间线
     append_to_timeline()
 
+    # 将所有时间线以 H.265 的渲染预设添加到渲染队列
     add_render_job()
 
-    # project.StartRendering(isInteractiveMode=True)
+    # 开始渲染之前，暂停程序，向用户确认是否有添加 Burn-in，同时给用户时间确认其他参数是否正确。然后开始渲染。
+    if input("The program is paused, please add burn-in manually, then enter 'y' to start rendering. Enter 'n' to "
+             "exit the program. y/n?") == 'y':
+        project.StartRendering(isInteractiveMode=True)
 
     # for render_job in project.GetRenderJobList():
     #     pprint(render_job)
