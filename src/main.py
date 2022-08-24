@@ -1,6 +1,7 @@
 # Import modules for Resolve native API
 import os
 import sys
+from pprint import pprint
 from typing import List
 from resolve_init import GetResolve
 
@@ -171,64 +172,63 @@ def append_to_timeline() -> None:
                         media_pool.AppendToTimeline(clip)
 
 
-def create_rendering_preset():
-    proxy_preset = project.GetRenderPresetList()
-    if len(proxy_preset) < 32:
-        project.SetCurrentRenderMode(0)
-        project.SetCurrentRenderFormatAndCodec("mov", "H265")
-        rendering_setting = {
-            "TargetDir": proxy_parent_path,
-            "ExportVideo": True,
-            "ExportAudio": True,
-            "VideoQuality": 5000,
-            "EncodingProfile": "Main",
-            "MultiPassEncode": False,
-            "AudioCodec": "aac",
-            "AudioBitDepth": 16,
-            "AudioSampleRate": 48000,
-            "ColorSpaceTag": "Same as Project",
-            "GammaTag": "Same as Project",
-        }
-        project.SetRenderSettings(rendering_setting)
+def add_render_job():
+    """Select a render preset, set the render path, add to render queue."""
+    preset_list = project.GetRenderPresetList()
+    if len(preset_list) < 32:
+        print("Please pour in the H.265 render preset first.")
+    elif len(preset_list) > 33:
+        print("There are two many custom render preset, please specify it.")
+    else:
+        # 加载 H.265 渲染预设.
+        proxy_preset = preset_list[-1]
+        project.LoadRenderPreset(proxy_preset)
 
-
-def test():
-    # resolve.OpenPage("deliver")
-    # Loading Proxy_H.265 preset.
-    proxy_preset = project.GetRenderPresetList()[-1]  # 需要提前 set 好 preset list：把 preset 拷到该 machine 上来
-    project.LoadRenderPreset(proxy_preset)
-
-    # 把时间线分别添加到渲染队列
-    for timeline in resolve.get_all_timeline():
-        project.SetCurrentTimeline(timeline)
-
-        rendering_setting = {'TargetDir': f"{proxy_parent_path}"}
-        project.SetRenderSettings(rendering_setting)
-        project.AddRenderJob()
+        # 把时间线分别添加到渲染队列
+        for timeline in get_all_timeline():
+            project.SetCurrentTimeline(timeline)
+            try:
+                os.mkdir(timeline.GetName())
+            except FileExistsError:
+                pass
+            rendering_setting = {'TargetDir': f"{proxy_parent_path}/{timeline.GetName()}"}
+            project.SetRenderSettings(rendering_setting)
+            project.AddRenderJob()
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("usage: ")
+        print("Usage: main.py [media path] [proxy path], please ensure this two directory exist.")
         sys.exit()
     else:
-        # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-        subfolders_name = get_subfolder_name(media_fullpath_list)
-        create_bin(subfolders_name)
-        import_clip_new()
+        # # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+        # subfolders_name = get_subfolder_name(media_fullpath_list)
+        # create_bin(subfolders_name)
+        # import_clip_new()
+        #
+        # # 根据媒体池所有的素材分辨率新建不同的时间线。
+        # for res in get_resolution():
+        #     if "x" not in res:
+        #         continue
+        #     if int(res.split("x")[1]) <= 1080:
+        #         timeline_width = (res.split("x")[0])
+        #         timeline_height = (res.split("x")[1])
+        #         create_new_timeline(res, timeline_width, timeline_height)
+        #     else:
+        #         timeline_width = int(int(res.split("x")[0]) / 2)
+        #         timeline_height = int(int(res.split("x")[1]) / 2)
+        #         create_new_timeline(res, timeline_width, timeline_height)
+        #
+        # # 导入素材到对应时间线
+        # append_to_timeline()
 
-        # 根据媒体池所有的素材分辨率新建不同的时间线。
-        for res in get_resolution():
-            if "x" not in res:
-                continue
-            if int(res.split("x")[1]) <= 1080:
-                timeline_width = (res.split("x")[0])
-                timeline_height = (res.split("x")[1])
-                create_new_timeline(res, timeline_width, timeline_height)
-            else:
-                timeline_width = int(int(res.split("x")[0]) / 2)
-                timeline_height = int(int(res.split("x")[1]) / 2)
-                create_new_timeline(res, timeline_width, timeline_height)
+        # add_render_job()
 
-        # 导入素材到对应时间线
-        append_to_timeline()
+        # project.StartRendering(isInteractiveMode=True)
+
+        for render_job in project.GetRenderJobList():
+            pprint(render_job)
+
+        # # Job status check
+        # job_id_list = [render_job.get('JobId') for render_job in project.GetRenderJobList()]
+        # print(project.GetRenderJobStatus(job_id_list[1]))
