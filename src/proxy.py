@@ -5,8 +5,13 @@ from pprint import pprint
 from typing import List
 from resolve_init import GetResolve
 
-media_parent_path: str = sys.argv[1]
-proxy_parent_path: str = sys.argv[2]
+if len(sys.argv) < 3:
+    print("Usage: python3 proxy.py [media path] [proxy path]\nPlease ensure this two directory exist.")
+    sys.exit()
+else:
+    media_parent_path: str = sys.argv[1]
+    proxy_parent_path: str = sys.argv[2]
+
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]  # TODO, 小写的情况还待考虑进去
 
 # Initialize Resolve native API
@@ -197,38 +202,34 @@ def add_render_job():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: proxy.py [media path] [proxy path], please ensure this two directory exist.")
-        sys.exit()
-    else:
-        # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-        subfolders_name = get_subfolder_name(media_fullpath_list)
-        create_bin(subfolders_name)
-        import_clip()
+    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+    subfolders_name = get_subfolder_name(media_fullpath_list)
+    create_bin(subfolders_name)
+    import_clip()
 
-        # 根据媒体池所有的素材分辨率新建不同的时间线。
-        for res in get_resolution():
-            if "x" not in res:
-                continue
-            if int(res.split("x")[1]) <= 1080:
-                timeline_width = (res.split("x")[0])
-                timeline_height = (res.split("x")[1])
-                create_new_timeline(res, timeline_width, timeline_height)
-            else:
-                timeline_width = int(int(res.split("x")[0]) / 2)
-                timeline_height = int(int(res.split("x")[1]) / 2)
-                create_new_timeline(res, timeline_width, timeline_height)
+    # 根据媒体池所有的素材分辨率新建不同的时间线。
+    for res in get_resolution():
+        if "x" not in res:
+            continue
+        if int(res.split("x")[1]) <= 1080:
+            timeline_width = (res.split("x")[0])
+            timeline_height = (res.split("x")[1])
+            create_new_timeline(res, timeline_width, timeline_height)
+        else:
+            timeline_width = int(int(res.split("x")[0]) / 2)
+            timeline_height = int(int(res.split("x")[1]) / 2)
+            create_new_timeline(res, timeline_width, timeline_height)
 
-        # 导入素材到对应时间线
-        append_to_timeline()
+    # 导入素材到对应时间线
+    append_to_timeline()
 
-        add_render_job()
+    add_render_job()
 
-        # project.StartRendering(isInteractiveMode=True)
+    # project.StartRendering(isInteractiveMode=True)
 
-        # for render_job in project.GetRenderJobList():
-        #     pprint(render_job)
+    # for render_job in project.GetRenderJobList():
+    #     pprint(render_job)
 
-        # # Job status check
-        # job_id_list = [render_job.get('JobId') for render_job in project.GetRenderJobList()]
-        # print(project.GetRenderJobStatus(job_id_list[1]))
+    # # Job status check
+    # job_id_list = [render_job.get('JobId') for render_job in project.GetRenderJobList()]
+    # print(project.GetRenderJobStatus(job_id_list[1]))
