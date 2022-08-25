@@ -69,8 +69,14 @@ def import_clip(path: str) -> None:
         filename_and_fullpath_keys.sort()
         filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
         media_parent_dir = os.path.basename(path)
-        current_folder = get_subfolder_by_name(
-            f"{cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]}")
+
+        if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
+            name = cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]
+            current_folder = get_subfolder_by_name(name)
+        else:
+            current_folder = get_subfolder_by_name(
+                f"{cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]}")
+
         media_pool.SetCurrentFolder(current_folder)
         media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
 
@@ -95,8 +101,14 @@ def import_clip_new(path: str) -> None:
 
     for abs_media_path in filename_and_fullpath_value:
         media_parent_dir = os.path.basename(path)
-        current_folder = get_subfolder_by_name(
-            f"{abs_media_path.split('/')[abs_media_path.split('/').index(media_parent_dir) + 1]}")
+
+        if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
+            name = f"{abs_media_path.split('/')[abs_media_path.split('/').index(media_parent_dir) + 1]}"
+            current_folder = get_subfolder_by_name(name)
+        else:
+            current_folder = get_subfolder_by_name(
+                f"{abs_media_path.split('/')[abs_media_path.split('/').index(media_parent_dir) + 1]}")
+
         media_pool.SetCurrentFolder(current_folder)
         media_pool.ImportMedia(abs_media_path)
 
@@ -221,6 +233,8 @@ def add_render_job():
 
 
 if __name__ == "__main__":
+
+    # 检查用户是否提供了正确的 argv。
     if len(sys.argv) < 3:
         print("Usage: python3 proxy.py [media path] [proxy.py path]\nPlease ensure this two directories exist.")
         sys.exit()
