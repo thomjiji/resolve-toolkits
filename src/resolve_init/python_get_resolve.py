@@ -30,7 +30,8 @@ def GetResolve():
         except ImportError:
             # No fallbacks ... report error:
             print(
-                "Unable to find module DaVinciResolveScript - please ensure that the module DaVinciResolveScript is discoverable by python")
+                "Unable to find module DaVinciResolveScript - please ensure that the module DaVinciResolveScript is "
+                "discoverable by python")
             print(
                 "For a default DaVinci Resolve installation, the module is expected to be located in: " + expectedPath)
             sys.exit()
