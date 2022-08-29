@@ -71,12 +71,17 @@ class Resolve:
         subfolder_dict = {subfolder.GetName(): subfolder for subfolder in all_subfolder}
         return subfolder_dict.get(subfolder_name, "")
 
-    def create_bin(self, destination_name: str, subfolders_name: list) -> None:
+    def create_bin(self, destination_name: str, subfolders_name: list):
         """Create sub-folder in media pool."""
-        for i in subfolders_name:
-            self.media_pool.AddSubFolder(destination_name, i)
-        if not get_subfolders_name("_Timeline"):
-            self.media_pool.AddSubFolder(self.root_folder, "_Timeline")
+        destination_obj = self.get_subfolder_by_name(destination_name)
+        if not destination_obj:
+            print("The destination does not currently have this folder.")
+        else:
+            for i in subfolders_name:
+                self.media_pool.AddSubFolder(destination_obj, i)
+
+        if not self.get_subfolder_by_name("_Timeline"):
+            return self.media_pool.AddSubFolder(self.root_folder, "_Timeline")
 
 
 if __name__ == "__main__":
