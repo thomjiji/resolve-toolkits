@@ -1,22 +1,48 @@
+import re
 from typing import List
 import os.path
-import sys
 from pprint import pprint
 from resolve_init import GetResolve
-from proxy import get_subfolder_name, create_bin
-from proxy import INVALID_EXTENSION
 
 
-# from resolve_init import DaVinciResolveScript as bmd
+def absolute_file_paths(path: str) -> list:
+    """Get the absolute paths of all files under a given path."""
+    absolute_file_path_list = []
+    for directory_path, _, filenames in os.walk(path):
+        for f in filenames:
+            if f.split('.')[-1] != "DS_Store":
+                absolute_file_path_list.append(os.path.abspath(os.path.join(directory_path, f)))
+    return absolute_file_path_list
+
+
+def get_subfolders_name(path: List[str]) -> List[str]:
+    """
+    Extract sub-folder name from media storage full path.
+    For creating sub-folder in the media pool.
+
+    args:
+        path: the next directory level of current media storage path lists.
+
+    return:
+        List: containing subfolders name.
+    """
+    return [os.path.split(i)[1] for i in path]
+
+
+def is_camera_dir(text: str) -> bool:
+    matched = re.search(r"^.+#\d$", text)
+    if matched:
+        return True
+    else:
+        return False
 
 
 class Resolve:
     def __init__(self, path: str):
         """
-        param path: media parent path, such as "素材".
+        path (string): media parent path, such as "素材".
         return: None
         """
-        # self.resolve = bmd.scriptapp('Resolve')
         self.path = path
         self.resolve = GetResolve()
         self.project_manager = self.resolve.GetProjectManager()
@@ -25,13 +51,6 @@ class Resolve:
         self.media_pool = self.project.GetMediaPool()
         self.root_folder = self.media_pool.GetRootFolder()
         self.media_fullpath_list = self.media_storage.GetSubFolderList(self.path)
-
-    def absolute_file_paths(self, path: str) -> list:
-        absolute_file_path_list = []
-        for directory_path, _, filenames in os.walk(path):
-            for f in filenames:
-                absolute_file_path_list.append(os.path.abspath(os.path.join(directory_path, f)))
-        return absolute_file_path_list
 
     def get_all_timeline(self) -> list:
         """Get all existing timelines. Return a list containing timeline object."""
@@ -52,40 +71,13 @@ class Resolve:
         subfolder_dict = {subfolder.GetName(): subfolder for subfolder in all_subfolder}
         return subfolder_dict.get(subfolder_name, "")
 
-    def get_subfolders_name(path: List[str]) -> List[str]:
-        """
-        Extract sub-folder name from media storage full path.
-        For creating sub-folder in the media pool.
-
-        args:
-            path: the next directory level of current media storage path lists.
-            
-        return:
-            List: containing subfolders name.
-        """
-        return [os.path.split(i)[1] for i in path]
-
-    def create_and_import(self):
-        for folder_path in self.media_storage.GetSubFolderList(self.path):
-            self.media_pool.AddSubFolder(self.root_folder, os.path.split(folder_path)[1])
-            print(folder_path)
-            for i in self.media_storage.GetSubFolderList(folder_path):
-                print(i)
-                for j in self.media_storage.GetSubFolderList(i):
-                    print(j)
-
-    def create_bin(self, subfolders_name: list, destination_name: str) -> None:
+    def create_bin(self, destination_name: str, subfolders_name: list) -> None:
         """Create sub-folder in media pool."""
         for i in subfolders_name:
             self.media_pool.AddSubFolder(destination_name, i)
-        if not get_subfolder_name("_Timeline"):
+        if not get_subfolders_name("_Timeline"):
             self.media_pool.AddSubFolder(self.root_folder, "_Timeline")
 
 
-media_parent_path = sys.argv[1]
-resolve = Resolve(media_parent_path)
-
-media_fullpath_list = resolve.media_storage.GetSubFolderList(media_parent_path)
-pprint(media_fullpath_list)
-subfolder_name_list = resolve.get_subfolders_name(media_fullpath_list)
-print(subfolder_name_list)
+if __name__ == "__main__":
+    r = Resolve('/Volumes/thom_7_for_Mac/tmp/素材')

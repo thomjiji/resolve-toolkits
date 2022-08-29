@@ -25,7 +25,7 @@ def absolute_file_paths(directory) -> list:
     return absolute_file_path_list
 
 
-def get_subfolder_name(source_media_full_path: List[str]) -> List[str]:
+def get_subfolders_name(source_media_full_path: List[str]) -> List[str]:
     """
     Extract sub-folder name from media storage full path.
     For creating sub-folder in the media pool.
@@ -44,7 +44,8 @@ def create_bin(subfolders_name: list) -> None:
     """
     for i in subfolders_name:
         media_pool.AddSubFolder(root_folder, i)
-    media_pool.AddSubFolder(root_folder, "_Timeline")
+    if not get_subfolder_by_name("_Timeline"):
+        media_pool.AddSubFolder(root_folder, "_Timeline")
 
 
 def import_clip(path: str) -> None:
@@ -247,9 +248,9 @@ if __name__ == "__main__":
     media_fullpath_list = media_storage.GetSubFolderList(media_parent_path)
 
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    subfolders_name = get_subfolder_name(media_fullpath_list)
+    subfolders_name = get_subfolders_name(media_fullpath_list)
     create_bin(subfolders_name)
-    import_clip_new(media_parent_path)
+    import_clip(media_parent_path)
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
     for res in get_resolution():
