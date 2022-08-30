@@ -99,8 +99,9 @@ class QC(Resolve):
                 if clip.GetClipProperty("type") == "Video" or clip.GetClipProperty("type") == "Video + Audio":
                     res = clip.GetClipProperty('Resolution')
                     fps = clip.GetClipProperty('FPS')
-                    current_timeline = self.get_timeline_by_name(f"{subfolder.GetName()}_{res}_{fps}")
-                    self.project.SetCurrentTimeline(current_timeline)
+                    current_timeline = self.get_timeline_by_name(f"{subfolder.GetName()}_{res}_{int(fps)}p")
+                    if not self.project.SetCurrentTimeline(current_timeline):
+                        print("append_to_timeline() project.SetCurrentTimeline failed.")
                     self.media_pool.AppendToTimeline(clip)
 
 
