@@ -67,16 +67,16 @@ class QC(Resolve):
             for folder in subfolder.GetSubFolderList():
                 self.media_pool.SetCurrentFolder(folder)
                 res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
-                for k, v in res_fps_dict.items():
-                    timeline_name = f"{subfolder.GetName()}_{k}_{v}"
-                    self.create_and_change_timeline(timeline_name, k.split('x')[0], k.split('x')[1], v)
+                for res, fps in res_fps_dict.items():
+                    timeline_name = f"{subfolder.GetName()}_{res}_{fps}"
+                    self.create_and_change_timeline(timeline_name, res.split('x')[0], res.split('x')[1], fps)
 
     def get_bin_res_and_fps(self, bin_name: str):
         """
         Get the resolution and frame rate of all clips under the given bin_name,
         return a dict.
 
-        :param bin_name: 媒体池已有的 camera bin.\
+        :param bin_name: 媒体池已有的 camera bin
         :return: 包含了媒体池该 camera bin 下所有素材的分辨率帧率的 dict，给 create_timeline_qc 使用
         """
         current_bin = self.get_subfolder_by_name(bin_name)
@@ -92,6 +92,17 @@ class QC(Resolve):
             if is_camera_dir(i):
                 self.media_pool.AddSubFolder(self.get_subfolder_by_name(i), "_Timeline")
 
+    def append_to_timeline(self) -> None:
+        for subfolder in self.root_folder.GetSubFolderList():
+            self.media_pool.SetCurrentFolder(subfolder)
+            for clip in subfolder.GetClipList():
+                if clip.GetClipProperty("type") == "Video" or clip.GetClipProperty("type") == "Video + Audio":
+                    res = clip.GetClipProperty('Resolution')
+                    fps = clip.GetClipProperty('FPS')
+                    current_timeline = self.get_timeline_by_name(f"{subfolder.GetName()}_{res}_{fps}")
+                    self.project.SetCurrentTimeline(current_timeline)
+                    self.media_pool.AppendToTimeline(clip)
+
 
 if __name__ == '__main__':
     # 检查用户是否提供了正确的 argv。
@@ -106,7 +117,7 @@ if __name__ == '__main__':
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin
     subfolders_name = get_subfolders_name(r.media_fullpath_list)
     r.create_bin(subfolders_name)
-    r.import_clip()
+    r.import_clip(one_by_one=True)
 
     # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
     r.create_timeline_qc()
