@@ -116,6 +116,7 @@ class QC(Resolve):
 
     def set_project_color_management(self):
         self.project.SetSetting('colorScienceMode', 'davinciYRGBColorManagedv2')
+        self.project.SetSetting('isAutoColorManage', '0')
         self.project.SetSetting('colorSpaceTimeline', 'DaVinci WG/Intermediate')
         self.project.SetSetting('colorSpaceInput', 'Rec.709 Gamma 2.4')
         self.project.SetSetting('colorSpaceOutput', 'Rec.709 Gamma 2.4')
