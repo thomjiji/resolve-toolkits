@@ -52,6 +52,7 @@ class Resolve:
         self.media_storage = self.resolve.GetMediaStorage()
         self.media_pool = self.project.GetMediaPool()
         self.root_folder = self.media_pool.GetRootFolder()
+        self.timeline = self.project.GetCurrentTimeline()
         self.media_fullpath_list = self.media_storage.GetSubFolderList(self.path)
 
     def get_all_timeline(self) -> list:
