@@ -145,7 +145,7 @@ class Resolve:
         current_timeline.SetSetting("useCustomSettings", "1")
         current_timeline.SetSetting("timelineResolutionWidth", str(width))
         current_timeline.SetSetting("timelineResolutionHeight", str(height))
-        current_timeline.SetSetting("timelineFrameRate", str(float(25)))
+        current_timeline.SetSetting("timelineFrameRate", str(25))
 
     def create_new_timeline(self, timeline_name: str, width: int, height: int) -> bool:
         """

@@ -43,7 +43,7 @@ class QC(Resolve):
     def __init__(self, path: str):
         super().__init__(path)
 
-    def create_and_change_timeline(self, timeline_name: str, width: str, height: str, fps: float) -> None:
+    def create_and_change_timeline(self, timeline_name: str, width: str, height: str, fps: int) -> None:
         """
         Simply create empty timeline and change its resolution to inputs width and height.
         Used for create_new_timeline() function.
@@ -68,8 +68,8 @@ class QC(Resolve):
                 self.media_pool.SetCurrentFolder(folder)
                 res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
                 for res, fps in res_fps_dict.items():
-                    timeline_name = f"{subfolder.GetName()}_{res}_{fps}"
-                    self.create_and_change_timeline(timeline_name, res.split('x')[0], res.split('x')[1], fps)
+                    timeline_name = f"{subfolder.GetName()}_{res}_{int(fps)}p"
+                    self.create_and_change_timeline(timeline_name, res.split('x')[0], res.split('x')[1], int(fps))
 
     def get_bin_res_and_fps(self, bin_name: str):
         """
