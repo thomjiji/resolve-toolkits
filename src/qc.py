@@ -40,8 +40,17 @@ def is_camera_dir(text: str) -> bool:
 
 
 class QC(Resolve):
+
     def __init__(self, path: str):
         super().__init__(path)
+        self.camera_log_dict = {
+            'S-Gamut3.Cine/S-Log3': ['A7S3', 'FX3', 'FX6', 'FX9', 'FS7', 'Z90'],
+            'Panasonic V-Gamut/V-Log': ['GH5', 'GH5M2', 'S1H', 'GH5S', 'S5'],
+            'ARRI LogC3': ['ALEXA_Mini', 'ALEXA_Mini_LF', 'AMIRA'],
+            'ARRI LogC4': ['ALEXA 35'],
+            'DJI D-Gamut/D-Log': ['Ronin_4D', '航拍', 'Mavic', 'MavicPro'],
+            'Rec.709 Gamma 2.4': ['Others']
+        }
 
     def create_and_change_timeline(self, timeline_name: str, width: str, height: str, fps: int) -> None:
         """
@@ -103,6 +112,31 @@ class QC(Resolve):
                     if not self.project.SetCurrentTimeline(current_timeline):
                         print("append_to_timeline() project.SetCurrentTimeline failed.")
                     self.media_pool.AppendToTimeline(clip)
+                    self.set_clip_colorspace(clip)
+
+    def set_project_color_management(self):
+        self.project.SetSetting('colorScienceMode', 'davinciYRGBColorManagedv2')
+        self.project.SetSetting('colorSpaceTimeline', 'DaVinci WG/Intermediate')
+        self.project.SetSetting('colorSpaceInput', 'Rec.709 Gamma 2.4')
+        self.project.SetSetting('colorSpaceOutput', 'Rec.709 Gamma 2.4')
+        self.project.SetSetting('timelineWorkingLuminanceMode', 'SDR 100')
+        self.project.SetSetting('timelineWorkingLuminanceMode', 'SDR 100')
+        self.project.SetSetting('inputDRT', 'DaVinci')
+        self.project.SetSetting('outputDRT', 'DaVinci')
+        self.project.SetSetting('useCATransform', '1')
+        self.project.SetSetting('useColorSpaceAwareGradingTools', '1')
+
+    def set_clip_colorspace(self, clip):
+        clip_path = clip.GetClipProperty('File Path')
+        cam_name = clip_path.split('/')[clip_path.split('/').index(os.path.basename(r.path)) + 1].split('#')[0]
+        camera_log_key = list(self.camera_log_dict.keys())
+        camera_log_val = list(self.camera_log_dict.values())
+        for value in camera_log_val:
+            if cam_name in value:
+                position = camera_log_val.index(value)
+                color_space = camera_log_key[position]
+                if clip.SetClipProperty('Input Color Space', color_space):
+                    print(f"Set input color space for {clip.GetName()} succeed.")
 
 
 if __name__ == '__main__':
@@ -126,4 +160,4 @@ if __name__ == '__main__':
     # 导入素材到对应时间线
     r.append_to_timeline()
 
-    # print(r.get_bin_resolution('Ronin_4D#2'))
+    r.set_project_color_management()
