@@ -48,11 +48,12 @@ def create_bin(subfolders_name: list) -> None:
         media_pool.AddSubFolder(root_folder, "_Timeline")
 
 
-def import_clip(path: str) -> None:
+def import_clip(path: str, one_by_one=False) -> None:
     """
     Import footage from media storage into the corresponding subfolder of the media
     pool root folder. Filter out the files with suffix in the INVALID_EXTENSION list
-    before importing.
+    before importing. If one_by_one parameter is specified as True, then it will be
+    imported one by one, which is relatively slow.
 
     Args:
         path (string): source media parent path, such as "素材".
@@ -61,37 +62,37 @@ def import_clip(path: str) -> None:
         None
     """
     media_fullpath_list = media_storage.GetSubFolderList(path)
+    media_parent_dir = os.path.basename(path)
 
-    for cam_path in media_fullpath_list:
-        filename_and_fullpath_dict = {os.path.basename(os.path.splitext(path)[0]): path for path in
-                                      absolute_file_paths(cam_path) if
-                                      os.path.splitext(path)[-1].replace(".", "") not in INVALID_EXTENSION}
-        filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
-        filename_and_fullpath_keys.sort()
-        filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
-        media_parent_dir = os.path.basename(path)
+    if not one_by_one:
+        for cam_path in media_fullpath_list:
+            filename_and_fullpath_value = get_sorted_path(cam_path)
+            if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
+                name = cam_path.split('\\')[cam_path.split('\\').index(media_parent_dir) + 1]
+                current_folder = get_subfolder_by_name(name)
+            else:
+                current_folder = get_subfolder_by_name(
+                    f"{cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]}")
 
-        if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
-            name = cam_path.split('\\')[cam_path.split('\\').index(media_parent_dir) + 1]
-            current_folder = get_subfolder_by_name(name)
-        else:
-            current_folder = get_subfolder_by_name(
-                f"{cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]}")
+            media_pool.SetCurrentFolder(current_folder)
+            media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
+    else:
+        for abs_media_path in get_sorted_path(path):
+            if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
+                name = abs_media_path.split('\\')[abs_media_path.split('\\').index(media_parent_dir) + 1]
+                current_folder = get_subfolder_by_name(name)
+            else:
+                current_folder = get_subfolder_by_name(
+                    f"{abs_media_path.split('/')[abs_media_path.split('/').index(media_parent_dir) + 1]}")
 
-        media_pool.SetCurrentFolder(current_folder)
-        media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
+            media_pool.SetCurrentFolder(current_folder)
+            media_pool.ImportMedia(abs_media_path)
 
 
-def import_clip_new(path: str) -> None:
+def get_sorted_path(path: str) -> list:
     """
-    Import footage from media storage into the corresponding sub-folder of the media
-    pool root folder one by one. Import speed is much lower.
-
-    Args:
-        path (string): source media parent path, such as "素材".
-
-    Returns:
-        None
+    Get the absolute paths of all files from the given path, then sort the absolute paths,
+    and finally return a list of sorted absolute paths.
     """
     filename_and_fullpath_dict = {os.path.basename(os.path.splitext(path)[0]): path for path in
                                   absolute_file_paths(path) if
@@ -99,19 +100,7 @@ def import_clip_new(path: str) -> None:
     filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
     filename_and_fullpath_keys.sort()
     filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
-
-    for abs_media_path in filename_and_fullpath_value:
-        media_parent_dir = os.path.basename(path)
-
-        if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
-            name = abs_media_path.split('\\')[abs_media_path.split('\\').index(media_parent_dir) + 1]
-            current_folder = get_subfolder_by_name(name)
-        else:
-            current_folder = get_subfolder_by_name(
-                f"{abs_media_path.split('/')[abs_media_path.split('/').index(media_parent_dir) + 1]}")
-
-        media_pool.SetCurrentFolder(current_folder)
-        media_pool.ImportMedia(abs_media_path)
+    return filename_and_fullpath_value
 
 
 def get_resolution() -> list:
@@ -215,7 +204,7 @@ def add_render_job():
     if len(preset_list) < 32:
         print("Please pour in the H.265 render preset first.")
     elif len(preset_list) > 33:
-        print("There are two many custom render preset, please specify it.")
+        print("There are too many custom render presets, please specify it.")
     else:
         # 加载 H.265 渲染预设.
         proxy_preset = preset_list[-1]
