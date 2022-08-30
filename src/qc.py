@@ -56,15 +56,29 @@ class QC(Resolve):
         current_timeline.SetSetting("timelineFrameRate", str(fps))
 
     def create_timeline_qc(self):
+        """
+        In the _Timeline bin under each bin of the media pool, create a new
+        timeline based on the resolution and frame rate of the clip under that
+        bin.
+
+        :return: None
+        """
         for subfolder in self.root_folder.GetSubFolderList():
             for folder in subfolder.GetSubFolderList():
                 self.media_pool.SetCurrentFolder(folder)
-                res_fps_dict = self.get_bin_resolution(subfolder.GetName())
+                res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
                 for k, v in res_fps_dict.items():
                     timeline_name = f"{subfolder.GetName()}_{k}_{v}"
                     self.create_and_change_timeline(timeline_name, k.split('x')[0], k.split('x')[1], v)
 
-    def get_bin_resolution(self, bin_name: str):
+    def get_bin_res_and_fps(self, bin_name: str):
+        """
+        Get the resolution and frame rate of all clips under the given bin_name,
+        return a dict.
+
+        :param bin_name: 媒体池已有的 camera bin.\
+        :return: 包含了媒体池该 camera bin 下所有素材的分辨率帧率的 dict，给 create_timeline_qc 使用
+        """
         current_bin = self.get_subfolder_by_name(bin_name)
         bin_res_fps_dict = {clip.GetClipProperty('Resolution'): clip.GetClipProperty('FPS') for clip in
                             current_bin.GetClipList()}
@@ -89,13 +103,13 @@ if __name__ == '__main__':
 
     r = QC(media_parent_path)
 
-    # # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    # subfolders_name = get_subfolders_name(r.media_fullpath_list)
-    # r.create_bin(subfolders_name)
-    # r.import_clip()
-    #
-    # # 导入素材到对应时间线
-    # r.append_to_timeline()
+    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+    subfolders_name = get_subfolders_name(r.media_fullpath_list)
+    r.create_bin(subfolders_name)
+    r.import_clip()
+
+    # 导入素材到对应时间线
+    r.append_to_timeline()
 
     # print(r.get_bin_resolution('Ronin_4D#2'))
-    print(r.create_timeline_qc())
+    r.create_timeline_qc()
