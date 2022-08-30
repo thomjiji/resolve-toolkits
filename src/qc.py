@@ -103,13 +103,15 @@ if __name__ == '__main__':
 
     r = QC(media_parent_path)
 
-    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin
     subfolders_name = get_subfolders_name(r.media_fullpath_list)
     r.create_bin(subfolders_name)
     r.import_clip()
+
+    # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
+    r.create_timeline_qc()
 
     # 导入素材到对应时间线
     r.append_to_timeline()
 
     # print(r.get_bin_resolution('Ronin_4D#2'))
-    r.create_timeline_qc()
