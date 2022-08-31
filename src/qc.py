@@ -131,12 +131,13 @@ class QC(Resolve):
         cam_name = clip_path.split('/')[clip_path.split('/').index(os.path.basename(r.path)) + 1].split('#')[0]
         camera_log_key = list(self.camera_log_dict.keys())
         camera_log_val = list(self.camera_log_dict.values())
-        for value in camera_log_val:
-            if cam_name in value:
-                position = camera_log_val.index(value)
-                color_space = camera_log_key[position]
-                if clip.SetClipProperty('Input Color Space', color_space):
-                    print(f"Set input color space for {clip.GetName()} succeed.")
+        try:
+            position = camera_log_val.index([value for value in camera_log_val if cam_name in value][0])
+            color_space = camera_log_key[position]
+        except IndexError:
+            color_space = camera_log_key[-1]
+        if clip.SetClipProperty('Input Color Space', color_space):
+            print(f"Set input color space {color_space} for {clip.GetName()} succeed.")
 
 
 if __name__ == '__main__':
