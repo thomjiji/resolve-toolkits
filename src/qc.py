@@ -2,9 +2,26 @@ import re
 import sys
 from typing import List
 import os.path
+import logging
 from pprint import pprint
-from resolve_init import GetResolve
 from proxy import Resolve
+
+# Set up logger
+log = logging.getLogger('test_logger')
+log.setLevel(logging.DEBUG)
+
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+
+# create formatter
+formatter = logging.Formatter('%(levelname)s - %(asctime)s - %(name)s: %(message)s', datefmt='%H:%M:%S')
+
+# add formatter to ch
+ch.setFormatter(formatter)
+
+# add ch to logger
+log.addHandler(ch)
 
 
 def absolute_file_paths(path: str) -> list:
@@ -47,7 +64,7 @@ class QC(Resolve):
             'S-Gamut3.Cine/S-Log3': ['A7S3', 'FX3', 'FX6', 'FX9', 'FS7', 'Z90'],
             'Panasonic V-Gamut/V-Log': ['GH5', 'GH5M2', 'S1H', 'GH5S', 'S5'],
             'ARRI LogC3': ['ALEXA_Mini', 'ALEXA_Mini_LF', 'AMIRA'],
-            'ARRI LogC4': ['ALEXA 35'],
+            'ARRI LogC4': ['ALEXA_35'],
             'DJI D-Gamut/D-Log': ['Ronin_4D', '航拍', 'Mavic', 'MavicPro'],
             'Rec.709 Gamma 2.4': ['Others']
         }
@@ -99,7 +116,7 @@ class QC(Resolve):
         for i in subfolders_name:
             self.media_pool.AddSubFolder(self.root_folder, i)
             if is_camera_dir(i):
-                self.media_pool.AddSubFolder(self.get_subfolder_by_name(i), "_Timeline")
+                self.media_pool.AddSubFolder(self.get_subfolder_by_name(i), "Timeline")
 
     def append_to_timeline(self) -> None:
         for subfolder in self.root_folder.GetSubFolderList():
@@ -138,7 +155,7 @@ class QC(Resolve):
         except IndexError:
             color_space = camera_log_key[-1]
         if clip.SetClipProperty('Input Color Space', color_space):
-            print(f"Set input color space {color_space} for {clip.GetName()} succeed.")
+            log.debug(f"Set input color space {color_space} for {clip.GetName()} succeed.")
 
 
 if __name__ == '__main__':
