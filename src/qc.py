@@ -7,7 +7,7 @@ from pprint import pprint
 from proxy import Resolve
 
 # Set up logger
-log = logging.getLogger('test_logger')
+log = logging.getLogger('qc_logger')
 log.setLevel(logging.DEBUG)
 
 # create console handler and set level to debug
@@ -15,7 +15,7 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
 # create formatter
-formatter = logging.Formatter('%(levelname)s - %(asctime)s - %(name)s: %(message)s', datefmt='%H:%M:%S')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s', datefmt='%H:%M:%S')
 
 # add formatter to ch
 ch.setFormatter(formatter)
@@ -127,7 +127,7 @@ class QC(Resolve):
                     fps = clip.GetClipProperty('FPS')
                     current_timeline = self.get_timeline_by_name(f"{subfolder.GetName()}_{res}_{int(fps)}p")
                     if not self.project.SetCurrentTimeline(current_timeline):
-                        print("append_to_timeline() project.SetCurrentTimeline failed.")
+                        log.debug("append_to_timeline() project.SetCurrentTimeline failed.")
                     self.media_pool.AppendToTimeline(clip)
                     self.set_clip_colorspace(clip)
 
@@ -155,13 +155,14 @@ class QC(Resolve):
         except IndexError:
             color_space = camera_log_key[-1]
         if clip.SetClipProperty('Input Color Space', color_space):
-            log.debug(f"Set input color space {color_space} for {clip.GetName()} succeed.")
+            log.info(f"Set input color space {color_space} for {clip.GetName()} succeed.")
 
 
 if __name__ == '__main__':
     # 检查用户是否提供了正确的 argv。
     if len(sys.argv) < 2:
-        print("Usage: python3 qc.py [media path]. \nPlease ensure this directory exist.")
+        log.debug("\n- Usage: python3 qc.py [media path]. \n- Please ensure this directory exist.")
+        # print("Usage: python3 qc.py [media path]. \nPlease ensure this directory exist.")
         sys.exit()
     else:
         media_parent_path: str = sys.argv[1]

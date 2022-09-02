@@ -3,10 +3,28 @@
 # Import modules for Resolve native API
 import os
 import sys
+import logging
 from typing import List
 from resolve_init import GetResolve
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]  # TODO, 小写的情况还待考虑进去
+
+# Set up logger
+log = logging.getLogger('proxy_logger')
+log.setLevel(logging.DEBUG)
+
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+
+# create formatter
+formatter = logging.Formatter('%(levelname)s - %(asctime)s - %(name)s: %(message)s', datefmt='%H:%M:%S')
+
+# add formatter to ch
+ch.setFormatter(formatter)
+
+# add ch to logger
+log.addHandler(ch)
 
 
 def absolute_file_paths(directory) -> list:
