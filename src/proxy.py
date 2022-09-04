@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
 # Import modules for Resolve native API
+import argparse
 import os
 import sys
 import logging
 from typing import List
 from resolve_init import GetResolve
 
-INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]  # TODO, 小写的情况还待考虑进去
+INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 
 # Set up logger
 log = logging.getLogger('proxy_logger')
@@ -58,12 +59,34 @@ def get_sorted_path(path: str) -> list:
 
 
 class Resolve:
-    def __init__(self, path: str):
-        """
-        path (string): media parent path, such as "素材".
-        return: None
-        """
-        self.path = path
+    def __init__(self):
+
+        # Get commandline arguments
+        parser = argparse.ArgumentParser(
+            description="Proxy is a commandline tool to automatic import clips, create timelines, add to render queue "
+                        "using the predefined preset quickly and easily.")
+        parser.add_argument('-i', '--input_path',
+                            help='Input path of media.',
+                            action='store',
+                            required=True)
+        parser.add_argument('-o', '--output',
+                            help='Output path of proxy rendering.',
+                            action='store',
+                            required=True)
+        args = parser.parse_args()
+
+        # show help if no args
+        if len(sys.argv) == 1:
+            parser.print_help()
+
+        self.path = args.input_path
+        if not os.path.exists(args.output):
+            log.debug(f"'{args.output}' doesn't exist, please ensure this directory exists.\n")
+            parser.print_help()
+            sys.exit()
+        else:
+            self.proxy_parent_path = args.output
+
         self.resolve = GetResolve()
         self.project_manager = self.resolve.GetProjectManager()
         self.project = self.project_manager.GetCurrentProject()
@@ -225,28 +248,16 @@ class Resolve:
             for timeline in self.get_all_timeline():
                 self.project.SetCurrentTimeline(timeline)
                 try:
-                    os.mkdir(f"{proxy_parent_path}/{timeline.GetName()}")
+                    os.mkdir(f"{self.proxy_parent_path}/{timeline.GetName()}")
                 except FileExistsError:
                     pass
-                rendering_setting = {'TargetDir': f"{proxy_parent_path}/{timeline.GetName()}"}
+                rendering_setting = {'TargetDir': f"{self.proxy_parent_path}/{timeline.GetName()}"}
                 self.project.SetRenderSettings(rendering_setting)
                 self.project.AddRenderJob()
 
 
 if __name__ == "__main__":
-
-    # 检查用户是否提供了正确的 argv。
-    if len(sys.argv) < 3:
-        print("Usage: python3 proxy.py [media path] [proxy.py path]\nPlease ensure this two directories exist.")
-        sys.exit()
-    else:
-        media_parent_path: str = sys.argv[1]
-        proxy_parent_path: str = sys.argv[2]
-        if not os.path.exists(proxy_parent_path):
-            print("Usage: python3 proxy.py [media path] [proxy.py path]\nPlease ensure this two directory exist.")
-            sys.exit()
-
-    r = Resolve(media_parent_path)
+    r = Resolve()
 
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
     subfolders_name = get_subfolders_name(r.media_fullpath_list)
