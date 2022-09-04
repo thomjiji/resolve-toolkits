@@ -65,21 +65,21 @@ class Resolve:
         parser = argparse.ArgumentParser(
             description="Proxy is a commandline tool to automatic import clips, create timelines, add to render queue "
                         "using the predefined preset quickly and easily.")
-        parser.add_argument('-i', '--input_path',
+        parser.add_argument('input',
                             help='Input path of media.',
                             action='store',
-                            required=True)
-        parser.add_argument('-o', '--output',
+                            type=str)
+        parser.add_argument('output',
                             help='Output path of proxy rendering.',
                             action='store',
-                            required=True)
+                            type=str)
         args = parser.parse_args()
 
         # show help if no args
         if len(sys.argv) == 1:
             parser.print_help()
 
-        self.path = args.input_path
+        self.path = args.input
         if not os.path.exists(args.output):
             log.debug(f"'{args.output}' doesn't exist, please ensure this directory exists.\n")
             parser.print_help()
