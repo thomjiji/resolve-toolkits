@@ -59,34 +59,9 @@ def get_sorted_path(path: str) -> list:
 
 
 class Resolve:
-    def __init__(self):
-
-        # Get commandline arguments
-        parser = argparse.ArgumentParser(
-            description="Proxy is a commandline tool to automatic import clips, create timelines, add to render queue "
-                        "using the predefined preset quickly and easily.")
-        parser.add_argument('input',
-                            help='Input path of media.',
-                            action='store',
-                            type=str)
-        parser.add_argument('output',
-                            help='Output path of proxy rendering.',
-                            action='store',
-                            type=str)
-        args = parser.parse_args()
-
-        # show help if no args
-        if len(sys.argv) == 1:
-            parser.print_help()
-
-        self.path = args.input
-        if not os.path.exists(args.output):
-            log.debug(f"'{args.output}' doesn't exist, please ensure this directory exists.\n")
-            parser.print_help()
-            sys.exit()
-        else:
-            self.proxy_parent_path = args.output
-
+    def __init__(self, input_path: str, output_path=None):
+        self.media_parent_path = input_path
+        self.proxy_parent_path = output_path
         self.resolve = GetResolve()
         self.project_manager = self.resolve.GetProjectManager()
         self.project = self.project_manager.GetCurrentProject()
@@ -94,7 +69,7 @@ class Resolve:
         self.media_pool = self.project.GetMediaPool()
         self.root_folder = self.media_pool.GetRootFolder()
         self.timeline = self.project.GetCurrentTimeline()
-        self.media_fullpath_list = self.media_storage.GetSubFolderList(self.path)
+        self.media_fullpath_list = self.media_storage.GetSubFolderList(self.media_parent_path)
 
     def get_all_timeline(self) -> list:
         """Get all existing timelines. Return a list containing timeline object."""
@@ -136,7 +111,7 @@ class Resolve:
         Returns:
             None
         """
-        media_parent_dir = os.path.basename(self.path)
+        media_parent_dir = os.path.basename(self.media_parent_path)
 
         if not one_by_one:
             for cam_path in self.media_fullpath_list:
@@ -151,7 +126,7 @@ class Resolve:
                 self.media_pool.SetCurrentFolder(current_folder)
                 self.media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
         else:
-            for abs_media_path in get_sorted_path(self.path):
+            for abs_media_path in get_sorted_path(self.media_parent_path):
                 if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
                     name = abs_media_path.split('\\')[abs_media_path.split('\\').index(media_parent_dir) + 1]
                     current_folder = self.get_subfolder_by_name(name)
@@ -255,9 +230,48 @@ class Resolve:
                 self.project.SetRenderSettings(rendering_setting)
                 self.project.AddRenderJob()
 
+    def set_project_color_management(self):
+        """
+        If the running platform is Mac OS, set the project color management to
+        DaVinci YRGB and the timeline color space to Rec.709-A. If the platform
+        is Windows, set the timeline color space to
+        """
+        if sys.platform.startswith("darwin"):
+            self.project.SetSetting('colorScienceMode', 'davinciYRGB')
+            self.project.SetSetting('colorSpaceTimeline', 'Rec.709-A')
+            self.project.SetSetting('colorSpaceOutput', 'Same as Timeline')
+
 
 if __name__ == "__main__":
-    r = Resolve()
+
+    # Get commandline arguments
+    parser = argparse.ArgumentParser(
+        description="Proxy is a commandline tool to automatic import clips, create timelines, add to render queue "
+                    "using the predefined preset quickly and easily.")
+    parser.add_argument('input',
+                        help='Input path of media.',
+                        action='store',
+                        type=str)
+    parser.add_argument('output',
+                        help='Output path of proxy rendering.',
+                        action='store',
+                        type=str)
+    args = parser.parse_args()
+
+    # show help if no args
+    if len(sys.argv) == 1:
+        parser.print_help()
+
+    media_parent_path = args.input
+    if not os.path.exists(args.output):
+        log.debug(f"'{args.output}' doesn't exist, please ensure this directory exists.\n")
+        parser.print_help()
+        sys.exit()
+    else:
+        proxy_parent_path = args.output
+
+    r = Resolve(media_parent_path, proxy_parent_path)
+    r.set_project_color_management()
 
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
     subfolders_name = get_subfolders_name(r.media_fullpath_list)

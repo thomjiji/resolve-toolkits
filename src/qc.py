@@ -59,7 +59,8 @@ def is_camera_dir(text: str) -> bool:
 class QC(Resolve):
 
     def __init__(self, path: str):
-        super().__init__(path)
+        self.path = path
+        super().__init__(self.path)
         self.camera_log_dict = {
             'S-Gamut3.Cine/S-Log3': ['A7S3', 'FX3', 'FX6', 'FX9', 'FS7', 'Z90'],
             'Panasonic V-Gamut/V-Log': ['GH5', 'GH5M2', 'S1H', 'GH5S', 'S5'],
@@ -146,7 +147,7 @@ class QC(Resolve):
 
     def set_clip_colorspace(self, clip):
         clip_path = clip.GetClipProperty('File Path')
-        cam_name = clip_path.split('/')[clip_path.split('/').index(os.path.basename(r.path)) + 1].split('#')[0]
+        cam_name = clip_path.split('/')[clip_path.split('/').index(os.path.basename(self.path)) + 1].split('#')[0]
         camera_log_key = list(self.camera_log_dict.keys())
         camera_log_val = list(self.camera_log_dict.values())
         try:
