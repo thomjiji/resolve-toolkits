@@ -147,7 +147,11 @@ class QC(Resolve):
 
     def set_clip_colorspace(self, clip):
         clip_path = clip.GetClipProperty('File Path')
-        cam_name = clip_path.split('/')[clip_path.split('/').index(os.path.basename(self.path)) + 1].split('#')[0]
+        if sys.platform.startswith('win') or sys.platform.startswith('cygwin'):
+            cam_name = clip_path.split('\\')[clip_path.split('\\').index(os.path.basename(self.path)) + 1].split('#')[0]
+
+        else:
+            cam_name = clip_path.split('/')[clip_path.split('/').index(os.path.basename(self.path)) + 1].split('#')[0]
         camera_log_key = list(self.camera_log_dict.keys())
         camera_log_val = list(self.camera_log_dict.values())
         try:
