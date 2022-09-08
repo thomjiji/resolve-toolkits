@@ -104,12 +104,6 @@ class Resolve:
         pool root folder. Filter out the files with suffix in the INVALID_EXTENSION list
         before importing. If one_by_one parameter is specified as True, then it will be
         imported one by one, which is relatively slow.
-
-        Args:
-            path (string): source media parent path, such as "素材".
-
-        Returns:
-            None
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
 
@@ -168,13 +162,12 @@ class Resolve:
         Create new timeline in the _Timeline bin (the last folder under root folder).
         Check timeline duplication.
 
-        Args:
-            timeline_name (string):
-            width (integer):
-            height (integer):
-
-        Returns:
-             Bool
+        :param timeline_name: The name of the timeline that will be created
+        :param width: The width of the timeline that will be created
+        :param height: The height of the timeline that will be created
+        :type timeline_name: str
+        :type width: int
+        :type height: int
         """
         self.media_pool.SetCurrentFolder(
             self.root_folder.GetSubFolderList()[-1])  # SetCurrentFolder 到 _Timeline bin 把时间线都建在这
