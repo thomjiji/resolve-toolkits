@@ -7,7 +7,7 @@ from pprint import pprint
 from proxy import Resolve
 
 # Set up logger
-log = logging.getLogger('qc_logger')
+log = logging.getLogger("qc_logger")
 log.setLevel(logging.DEBUG)
 
 # create console handler and set level to debug
@@ -15,7 +15,9 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
 # create formatter
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s', datefmt='%H:%M:%S')
+formatter = logging.Formatter(
+    "%(asctime)s - %(name)s - %(levelname)s: %(message)s", datefmt="%H:%M:%S"
+)
 
 # add formatter to ch
 ch.setFormatter(formatter)
@@ -29,8 +31,10 @@ def absolute_file_paths(path: str) -> list:
     absolute_file_path_list = []
     for directory_path, _, filenames in os.walk(path):
         for f in filenames:
-            if f.split('.')[-1] != "DS_Store":
-                absolute_file_path_list.append(os.path.abspath(os.path.join(directory_path, f)))
+            if f.split(".")[-1] != "DS_Store":
+                absolute_file_path_list.append(
+                    os.path.abspath(os.path.join(directory_path, f))
+                )
     return absolute_file_path_list
 
 
@@ -57,19 +61,20 @@ def is_camera_dir(text: str) -> bool:
 
 
 class QC(Resolve):
-
     def __init__(self, path: str):
         super().__init__(path)
         self.camera_log_dict = {
-            'S-Gamut3.Cine/S-Log3': ['A7S3', 'FX3', 'FX6', 'FX9', 'FS7', 'Z90'],
-            'Panasonic V-Gamut/V-Log': ['GH5', 'GH5M2', 'S1H', 'GH5S', 'S5'],
-            'ARRI LogC3': ['ALEXA_Mini', 'ALEXA_Mini_LF', 'AMIRA'],
-            'ARRI LogC4': ['ALEXA_35'],
-            'DJI D-Gamut/D-Log': ['Ronin_4D', '航拍', 'Mavic', 'MavicPro'],
-            'Rec.709 Gamma 2.4': ['Others']
+            "S-Gamut3.Cine/S-Log3": ["A7S3", "FX3", "FX6", "FX9", "FS7", "Z90"],
+            "Panasonic V-Gamut/V-Log": ["GH5", "GH5M2", "S1H", "GH5S", "S5"],
+            "ARRI LogC3": ["ALEXA_Mini", "ALEXA_Mini_LF", "AMIRA"],
+            "ARRI LogC4": ["ALEXA_35"],
+            "DJI D-Gamut/D-Log": ["Ronin_4D", "航拍", "Mavic", "MavicPro"],
+            "Rec.709 Gamma 2.4": ["Others"],
         }
 
-    def create_and_change_timeline(self, timeline_name: str, width: str, height: str, fps: int) -> None:
+    def create_and_change_timeline(
+        self, timeline_name: str, width: str, height: str, fps: int
+    ) -> None:
         """
         Simply create empty timeline and change its resolution to inputs width and height.
         Used for create_new_timeline() function.
@@ -95,7 +100,9 @@ class QC(Resolve):
                 res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
                 for res, fps in res_fps_dict.items():
                     timeline_name = f"{subfolder.GetName()}_{res}_{int(fps)}p"
-                    self.create_and_change_timeline(timeline_name, res.split('x')[0], res.split('x')[1], int(fps))
+                    self.create_and_change_timeline(
+                        timeline_name, res.split("x")[0], res.split("x")[1], int(fps)
+                    )
 
     def get_bin_res_and_fps(self, bin_name: str):
         """
@@ -106,8 +113,10 @@ class QC(Resolve):
         :return: 包含了媒体池该 camera bin 下所有素材的分辨率帧率的 dict，给 create_timeline_qc 使用
         """
         current_bin = self.get_subfolder_by_name(bin_name)
-        bin_res_fps_dict = {clip.GetClipProperty('Resolution'): clip.GetClipProperty('FPS') for clip in
-                            current_bin.GetClipList()}
+        bin_res_fps_dict = {
+            clip.GetClipProperty("Resolution"): clip.GetClipProperty("FPS")
+            for clip in current_bin.GetClipList()
+        }
 
         return bin_res_fps_dict
 
@@ -122,46 +131,61 @@ class QC(Resolve):
         for subfolder in self.root_folder.GetSubFolderList():
             self.media_pool.SetCurrentFolder(subfolder)
             for clip in subfolder.GetClipList():
-                if clip.GetClipProperty("type") == "Video" or clip.GetClipProperty("type") == "Video + Audio":
-                    res = clip.GetClipProperty('Resolution')
-                    fps = clip.GetClipProperty('FPS')
-                    current_timeline = self.get_timeline_by_name(f"{subfolder.GetName()}_{res}_{int(fps)}p")
+                if (
+                    clip.GetClipProperty("type") == "Video"
+                    or clip.GetClipProperty("type") == "Video + Audio"
+                ):
+                    res = clip.GetClipProperty("Resolution")
+                    fps = clip.GetClipProperty("FPS")
+                    current_timeline = self.get_timeline_by_name(
+                        f"{subfolder.GetName()}_{res}_{int(fps)}p"
+                    )
                     if not self.project.SetCurrentTimeline(current_timeline):
-                        log.debug("append_to_timeline() project.SetCurrentTimeline failed.")
+                        log.debug(
+                            "append_to_timeline() project.SetCurrentTimeline failed."
+                        )
                     self.media_pool.AppendToTimeline(clip)
                     self.set_clip_colorspace(clip)
 
     def set_project_color_management(self):
-        self.project.SetSetting('colorScienceMode', 'davinciYRGBColorManagedv2')
-        self.project.SetSetting('isAutoColorManage', '0')
-        self.project.SetSetting('colorSpaceTimeline', 'DaVinci WG/Intermediate')
-        self.project.SetSetting('colorSpaceInput', 'Rec.709 Gamma 2.4')
-        self.project.SetSetting('colorSpaceOutput', 'Rec.709 Gamma 2.4')
-        self.project.SetSetting('timelineWorkingLuminanceMode', 'SDR 100')
-        self.project.SetSetting('timelineWorkingLuminanceMode', 'SDR 100')
-        self.project.SetSetting('inputDRT', 'DaVinci')
-        self.project.SetSetting('outputDRT', 'DaVinci')
-        self.project.SetSetting('useCATransform', '1')
-        self.project.SetSetting('useColorSpaceAwareGradingTools', '1')
+        self.project.SetSetting("colorScienceMode", "davinciYRGBColorManagedv2")
+        self.project.SetSetting("isAutoColorManage", "0")
+        self.project.SetSetting("colorSpaceTimeline", "DaVinci WG/Intermediate")
+        self.project.SetSetting("colorSpaceInput", "Rec.709 Gamma 2.4")
+        self.project.SetSetting("colorSpaceOutput", "Rec.709 Gamma 2.4")
+        self.project.SetSetting("timelineWorkingLuminanceMode", "SDR 100")
+        self.project.SetSetting("timelineWorkingLuminanceMode", "SDR 100")
+        self.project.SetSetting("inputDRT", "DaVinci")
+        self.project.SetSetting("outputDRT", "DaVinci")
+        self.project.SetSetting("useCATransform", "1")
+        self.project.SetSetting("useColorSpaceAwareGradingTools", "1")
 
     def set_clip_colorspace(self, clip):
-        clip_path = clip.GetClipProperty('File Path')
-        cam_name = clip_path.split('/')[clip_path.split('/').index(os.path.basename(r.path)) + 1].split('#')[0]
+        clip_path = clip.GetClipProperty("File Path")
+        cam_name = clip_path.split("/")[
+            clip_path.split("/").index(os.path.basename(r.path)) + 1
+        ].split("#")[0]
         camera_log_key = list(self.camera_log_dict.keys())
         camera_log_val = list(self.camera_log_dict.values())
         try:
-            position = camera_log_val.index([value for value in camera_log_val if cam_name in value][0])
+            position = camera_log_val.index(
+                [value for value in camera_log_val if cam_name in value][0]
+            )
             color_space = camera_log_key[position]
         except IndexError:
             color_space = camera_log_key[-1]
-        if clip.SetClipProperty('Input Color Space', color_space):
-            log.info(f"Set input color space {color_space} for {clip.GetName()} succeed.")
+        if clip.SetClipProperty("Input Color Space", color_space):
+            log.info(
+                f"Set input color space {color_space} for {clip.GetName()} succeed."
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 检查用户是否提供了正确的 argv。
     if len(sys.argv) < 2:
-        log.debug("\n- Usage: python3 qc.py [media path]. \n- Please ensure this directory exist.")
+        log.debug(
+            "\n- Usage: python3 qc.py [media path]. \n- Please ensure this directory exist."
+        )
         # print("Usage: python3 qc.py [media path]. \nPlease ensure this directory exist.")
         sys.exit()
     else:
