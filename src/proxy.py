@@ -77,7 +77,9 @@ class Resolve:
         self.media_pool = self.project.GetMediaPool()
         self.root_folder = self.media_pool.GetRootFolder()
         self.timeline = self.project.GetCurrentTimeline()
-        self.media_fullpath_list = self.media_storage.GetSubFolderList(self.media_parent_path)
+        self.media_fullpath_list = self.media_storage.GetSubFolderList(
+            self.media_parent_path
+        )
 
     def get_all_timeline(self) -> list:
         """Get all existing timelines. Return a list containing timeline object."""
@@ -127,7 +129,7 @@ class Resolve:
                 if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
                     name = cam_path.split("\\")[
                         cam_path.split("\\").index(media_parent_dir) + 1
-                        ]
+                    ]
                     current_folder = self.get_subfolder_by_name(name)
                 else:
                     current_folder = self.get_subfolder_by_name(
@@ -141,7 +143,7 @@ class Resolve:
                 if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
                     name = abs_media_path.split("\\")[
                         abs_media_path.split("\\").index(media_parent_dir) + 1
-                        ]
+                    ]
                     current_folder = self.get_subfolder_by_name(name)
                 else:
                     current_folder = self.get_subfolder_by_name(
@@ -261,9 +263,9 @@ class Resolve:
         is Windows, set the timeline color space to
         """
         if sys.platform.startswith("darwin"):
-            self.project.SetSetting('colorScienceMode', 'davinciYRGB')
-            self.project.SetSetting('colorSpaceTimeline', 'Rec.709 Gamma 2.4')
-            self.project.SetSetting('colorSpaceOutput', 'Same as Timeline')
+            self.project.SetSetting("colorScienceMode", "davinciYRGB")
+            self.project.SetSetting("colorSpaceTimeline", "Rec.709 Gamma 2.4")
+            self.project.SetSetting("colorSpaceOutput", "Same as Timeline")
 
 
 if __name__ == "__main__":
@@ -271,15 +273,12 @@ if __name__ == "__main__":
     # Get commandline arguments
     parser = argparse.ArgumentParser(
         description="Proxy is a commandline tool to automatic import clips, create timelines, add to render queue "
-                    "using the predefined preset quickly and easily.")
-    parser.add_argument('input',
-                        help='Input path of media.',
-                        action='store',
-                        type=str)
-    parser.add_argument('output',
-                        help='Output path of proxy rendering.',
-                        action='store',
-                        type=str)
+        "using the predefined preset quickly and easily."
+    )
+    parser.add_argument("input", help="Input path of media.", action="store", type=str)
+    parser.add_argument(
+        "output", help="Output path of proxy rendering.", action="store", type=str
+    )
     args = parser.parse_args()
 
     # show help if no args
@@ -288,7 +287,9 @@ if __name__ == "__main__":
 
     media_parent_path = args.input
     if not os.path.exists(args.output):
-        log.debug(f"'{args.output}' doesn't exist, please ensure this directory exists.\n")
+        log.debug(
+            f"'{args.output}' doesn't exist, please ensure this directory exists.\n"
+        )
         parser.print_help()
         sys.exit()
     else:
@@ -322,8 +323,12 @@ if __name__ == "__main__":
     r.add_render_job()
 
     # 开始渲染之前，暂停程序，向用户确认是否有添加 Burn-in，同时给用户时间确认其他参数是否正确。然后开始渲染。
-    if input("The program is paused, please add burn-in manually, then enter 'y' to start rendering. Enter 'n' to "
-             "exit the program. y/n?") == "y":
+    if (
+        input(
+            "The program is paused, please add burn-in manually, then enter 'y' to start rendering. Enter 'n' to exit the program. y/n?"
+        )
+        == "y"
+    ):
         r.project.StartRendering(isInteractiveMode=True)
 
     # for render_job in project.GetRenderJobList():
