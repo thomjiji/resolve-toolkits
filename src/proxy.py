@@ -226,12 +226,12 @@ class Resolve:
     def set_project_color_management(self):
         """
         If the running platform is Mac OS, set the project color management to
-        DaVinci YRGB and the timeline color space to Rec.709-A. If the platform
+        DaVinci YRGB and the timeline color space to Rec.709 Gamma 2.4. If the platform
         is Windows, set the timeline color space to
         """
         if sys.platform.startswith("darwin"):
             self.project.SetSetting('colorScienceMode', 'davinciYRGB')
-            self.project.SetSetting('colorSpaceTimeline', 'Rec.709-A')
+            self.project.SetSetting('colorSpaceTimeline', 'Rec.709 Gamma 2.4')
             self.project.SetSetting('colorSpaceOutput', 'Same as Timeline')
 
 
