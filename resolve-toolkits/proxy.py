@@ -70,6 +70,7 @@ class Resolve:
     def __init__(self, input_path: str, output_path=None):
         self.media_parent_path = input_path
         self.proxy_parent_path = output_path
+
         self.resolve = GetResolve()
         self.project_manager = self.resolve.GetProjectManager()
         self.project = self.project_manager.GetCurrentProject()
