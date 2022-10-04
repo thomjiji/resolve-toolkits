@@ -93,7 +93,7 @@ class Resolve:
         return timeline_dict.get(timeline_name, "")
 
     def get_subfolder_by_name(self, subfolder_name: str):
-        """Get subfolders (folder object) under the root folder in the media pool."""
+        """Get subfolder (Folder object) under the root folder in the media pool."""
         all_subfolder = self.root_folder.GetSubFolderList()
         subfolder_dict = {subfolder.GetName(): subfolder for subfolder in all_subfolder}
         return subfolder_dict.get(subfolder_name, "")
