@@ -11,7 +11,7 @@ from resolve_init import GetResolve
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 
 # Set up logger
-log = logging.getLogger('proxy_logger')
+log = logging.getLogger("proxy_logger")
 log.setLevel(logging.DEBUG)
 
 # create console handler and set level to debug
@@ -19,7 +19,9 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
 # create formatter
-formatter = logging.Formatter('%(levelname)s - %(asctime)s - %(name)s: %(message)s', datefmt='%H:%M:%S')
+formatter = logging.Formatter(
+    "%(levelname)s - %(asctime)s - %(name)s: %(message)s", datefmt="%H:%M:%S"
+)
 
 # add formatter to ch
 ch.setFormatter(formatter)
@@ -28,11 +30,13 @@ ch.setFormatter(formatter)
 log.addHandler(ch)
 
 
-def absolute_file_paths(directory) -> list:
+def absolute_file_paths(path: str) -> list:
     absolute_file_path_list = []
-    for directory_path, _, filenames in os.walk(directory):
-        for f in filenames:
-            absolute_file_path_list.append(os.path.abspath(os.path.join(directory_path, f)))
+    for directory_path, _, filenames in os.walk(path):
+        for filename in filenames:
+            absolute_file_path_list.append(
+                os.path.abspath(os.path.join(directory_path, filename))
+            )
     return absolute_file_path_list
 
 
@@ -49,12 +53,16 @@ def get_sorted_path(path: str) -> list:
     Get the absolute paths of all files from the given path, then sort the absolute paths,
     and finally return a list of sorted absolute paths.
     """
-    filename_and_fullpath_dict = {os.path.basename(os.path.splitext(path)[0]): path for path in
-                                  absolute_file_paths(path) if
-                                  os.path.splitext(path)[-1].replace(".", "") not in INVALID_EXTENSION}
+    filename_and_fullpath_dict = {
+        os.path.basename(os.path.splitext(path)[0]): path
+        for path in absolute_file_paths(path)
+        if os.path.splitext(path)[-1].replace(".", "") not in INVALID_EXTENSION
+    }
     filename_and_fullpath_keys = list(filename_and_fullpath_dict.keys())
     filename_and_fullpath_keys.sort()
-    filename_and_fullpath_value = [filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys]
+    filename_and_fullpath_value = [
+        filename_and_fullpath_dict.get(i) for i in filename_and_fullpath_keys
+    ]
     return filename_and_fullpath_value
 
 
@@ -104,6 +112,12 @@ class Resolve:
         pool root folder. Filter out the files with suffix in the INVALID_EXTENSION list
         before importing. If one_by_one parameter is specified as True, then it will be
         imported one by one, which is relatively slow.
+
+        Args:
+            path (string): source media parent path, such as "素材".
+
+        Returns:
+            None
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
 
@@ -111,22 +125,28 @@ class Resolve:
             for cam_path in self.media_fullpath_list:
                 filename_and_fullpath_value = get_sorted_path(cam_path)
                 if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
-                    name = cam_path.split('\\')[cam_path.split('\\').index(media_parent_dir) + 1]
+                    name = cam_path.split("\\")[
+                        cam_path.split("\\").index(media_parent_dir) + 1
+                        ]
                     current_folder = self.get_subfolder_by_name(name)
                 else:
                     current_folder = self.get_subfolder_by_name(
-                        f"{cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]}")
+                        f"{cam_path.split('/')[cam_path.split('/').index(media_parent_dir) + 1]}"
+                    )
 
                 self.media_pool.SetCurrentFolder(current_folder)
                 self.media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
         else:
             for abs_media_path in get_sorted_path(self.media_parent_path):
                 if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
-                    name = abs_media_path.split('\\')[abs_media_path.split('\\').index(media_parent_dir) + 1]
+                    name = abs_media_path.split("\\")[
+                        abs_media_path.split("\\").index(media_parent_dir) + 1
+                        ]
                     current_folder = self.get_subfolder_by_name(name)
                 else:
                     current_folder = self.get_subfolder_by_name(
-                        f"{abs_media_path.split('/')[abs_media_path.split('/').index(media_parent_dir) + 1]}")
+                        f"{abs_media_path.split('/')[abs_media_path.split('/').index(media_parent_dir) + 1]}"
+                    )
 
                 self.media_pool.SetCurrentFolder(current_folder)
                 self.media_pool.ImportMedia(abs_media_path)
@@ -145,7 +165,9 @@ class Resolve:
 
         return all_clips_resolution
 
-    def create_and_change_timeline(self, timeline_name: str, width: str, height: str) -> None:
+    def create_and_change_timeline(
+        self, timeline_name: str, width: str, height: str
+    ) -> None:
         """
         Simply create empty timeline and change its resolution to inputs width and height.
         Used for create_new_timeline() function.
@@ -170,7 +192,8 @@ class Resolve:
         :type height: int
         """
         self.media_pool.SetCurrentFolder(
-            self.root_folder.GetSubFolderList()[-1])  # SetCurrentFolder 到 _Timeline bin 把时间线都建在这
+            self.root_folder.GetSubFolderList()[-1]
+        )  # SetCurrentFolder 到 _Timeline bin 把时间线都建在这
 
         if self.project.GetTimelineCount() == 0:
             self.create_and_change_timeline(timeline_name, str(width), str(height))
@@ -179,7 +202,8 @@ class Resolve:
             existing_timeline_resolution = []
             for existing_timeline in self.get_all_timeline():
                 existing_timeline_resolution.append(
-                    f"{existing_timeline.GetSetting('timelineResolutionWidth')}x{existing_timeline.GetSetting('timelineResolutionHeight')}")
+                    f"{existing_timeline.GetSetting('timelineResolutionWidth')}x{existing_timeline.GetSetting('timelineResolutionHeight')}"
+                )
             if f"{str(width)}x{str(height)}" not in existing_timeline_resolution:
                 self.create_and_change_timeline(timeline_name, str(width), str(height))
             else:
@@ -192,12 +216,17 @@ class Resolve:
         all_timeline_name = [timeline.GetName() for timeline in self.get_all_timeline()]
         for subfolder in self.root_folder.GetSubFolderList():
             for clip in subfolder.GetClipList():
-                if clip.GetClipProperty("type") == "Video" or clip.GetClipProperty("type") == "Video + Audio":
+                if (
+                    clip.GetClipProperty("type") == "Video"
+                    or clip.GetClipProperty("type") == "Video + Audio"
+                ):
                     clip_width = clip.GetClipProperty("Resolution").split("x")[0]
                     clip_height = clip.GetClipProperty("Resolution").split("x")[1]
                     for name in all_timeline_name:
                         if f"{clip_width}x{clip_height}" in name:
-                            self.project.SetCurrentTimeline(self.get_timeline_by_name(name))
+                            self.project.SetCurrentTimeline(
+                                self.get_timeline_by_name(name)
+                            )
                             self.media_pool.AppendToTimeline(clip)
 
     def add_render_job(self):
@@ -219,7 +248,9 @@ class Resolve:
                     os.mkdir(f"{self.proxy_parent_path}/{timeline.GetName()}")
                 except FileExistsError:
                     pass
-                rendering_setting = {'TargetDir': f"{self.proxy_parent_path}/{timeline.GetName()}"}
+                rendering_setting = {
+                    "TargetDir": f"{self.proxy_parent_path}/{timeline.GetName()}"
+                }
                 self.project.SetRenderSettings(rendering_setting)
                 self.project.AddRenderJob()
 
@@ -276,8 +307,8 @@ if __name__ == "__main__":
         if "x" not in res:
             continue
         if int(res.split("x")[1]) <= 1080:
-            timeline_width = (res.split("x")[0])
-            timeline_height = (res.split("x")[1])
+            timeline_width = res.split("x")[0]
+            timeline_height = res.split("x")[1]
             r.create_new_timeline(res, timeline_width, timeline_height)
         else:
             timeline_width = int(int(res.split("x")[0]) / 2)
@@ -292,7 +323,7 @@ if __name__ == "__main__":
 
     # 开始渲染之前，暂停程序，向用户确认是否有添加 Burn-in，同时给用户时间确认其他参数是否正确。然后开始渲染。
     if input("The program is paused, please add burn-in manually, then enter 'y' to start rendering. Enter 'n' to "
-             "exit the program. y/n?") == 'y':
+             "exit the program. y/n?") == "y":
         r.project.StartRendering(isInteractiveMode=True)
 
     # for render_job in project.GetRenderJobList():
