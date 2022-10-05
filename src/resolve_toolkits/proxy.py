@@ -59,7 +59,6 @@ def get_subfolders_name(source_media_full_path: List[str]) -> List[str]:
     ----------
     source_media_full_path
 
-
     Returns
     -------
     A list containing the names of the folders under the given path
@@ -103,7 +102,8 @@ class Resolve:
         )
 
     def get_all_timeline(self) -> list:
-        """Get all existing timelines. Return a list containing timeline object."""
+        """Get all existing timelines. Return a list containing timeline object.
+        """
         all_timeline = []
         for timeline_index in range(1, self.project.GetTimelineCount() + 1, 1):
             all_timeline.append(self.project.GetTimelineByIndex(timeline_index))
@@ -112,7 +112,8 @@ class Resolve:
     def get_timeline_by_name(self, timeline_name: str):
         """Get timeline object by name."""
         all_timeline = self.get_all_timeline()
-        timeline_dict = {timeline.GetName(): timeline for timeline in all_timeline}
+        timeline_dict = {timeline.GetName(): timeline for timeline in
+                         all_timeline}
         return timeline_dict.get(timeline_name, "")
 
     def get_subfolder_by_name(self, subfolder_name: str):
@@ -120,7 +121,8 @@ class Resolve:
         pool.
         """
         all_subfolder = self.root_folder.GetSubFolderList()
-        subfolder_dict = {subfolder.GetName(): subfolder for subfolder in all_subfolder}
+        subfolder_dict = {subfolder.GetName(): subfolder for subfolder in
+                          all_subfolder}
         return subfolder_dict.get(subfolder_name, "")
 
     def create_bin(self, subfolders_list: list):
@@ -140,21 +142,20 @@ class Resolve:
 
         Parameters
         ----------
-        None
-
-        Returns
-        -------
-        None
+        one_by_one
+            If this parameter is specified as True, it will be imported one
+            by one, which is relatively slow.
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
 
         if not one_by_one:
             for cam_path in self.media_fullpath_list:
                 filename_and_fullpath_value = get_sorted_path(cam_path)
-                if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
+                if sys.platform.startswith("win") or sys.platform.startswith(
+                    "cygwin"):
                     name = cam_path.split("\\")[
                         cam_path.split("\\").index(media_parent_dir) + 1
-                    ]
+                        ]
                     current_folder = self.get_subfolder_by_name(name)
                 else:
                     current_folder = self.get_subfolder_by_name(
@@ -162,17 +163,19 @@ class Resolve:
                     )
 
                 self.media_pool.SetCurrentFolder(current_folder)
-                self.media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
+                self.media_storage.AddItemListToMediaPool(
+                    filename_and_fullpath_value)
         else:
             for abs_media_path in get_sorted_path(self.media_parent_path):
-                if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
+                if sys.platform.startswith("win") or sys.platform.startswith(
+                    "cygwin"):
                     name = abs_media_path.split("\\")[
                         abs_media_path.split("\\").index(media_parent_dir) + 1
-                    ]
+                        ]
                     current_folder = self.get_subfolder_by_name(name)
                 else:
                     current_folder = self.get_subfolder_by_name(
-                        f"{abs_media_path.split('/')[abs_media_path.split('/').index(media_parent_dir) + 1]}"
+                        f"{abs_media_path.split('/')[abs_media_path.split('/').index(media_parent_dir) + 1]} "
                     )
 
                 self.media_pool.SetCurrentFolder(current_folder)
@@ -216,7 +219,7 @@ class Resolve:
 
         Returns
         -------
-        None
+
         """
         self.media_pool.CreateEmptyTimeline(timeline_name)
         current_timeline = self.project.GetCurrentTimeline()
@@ -225,7 +228,8 @@ class Resolve:
         current_timeline.SetSetting("timelineResolutionHeight", str(height))
         return current_timeline.SetSetting("timelineFrameRate", str(25))
 
-    def create_new_timeline(self, timeline_name: str, width: int, height: int) -> bool:
+    def create_new_timeline(self, timeline_name: str, width: int,
+                            height: int) -> bool:
         """Create new timeline in the _Timeline bin (the last folder under root
         folder). Check timeline duplication.
 
@@ -267,15 +271,18 @@ class Resolve:
 
     def append_to_timeline(self) -> None:
         """Append to timeline"""
-        all_timeline_name = [timeline.GetName() for timeline in self.get_all_timeline()]
+        all_timeline_name = [timeline.GetName() for timeline in
+                             self.get_all_timeline()]
         for subfolder in self.root_folder.GetSubFolderList():
             for clip in subfolder.GetClipList():
                 if (
                     clip.GetClipProperty("type") == "Video"
                     or clip.GetClipProperty("type") == "Video + Audio"
                 ):
-                    clip_width = clip.GetClipProperty("Resolution").split("x")[0]
-                    clip_height = clip.GetClipProperty("Resolution").split("x")[1]
+                    clip_width = clip.GetClipProperty("Resolution").split("x")[
+                        0]
+                    clip_height = clip.GetClipProperty("Resolution").split("x")[
+                        1]
                     for name in all_timeline_name:
                         if f"{clip_width}x{clip_height}" in name:
                             self.project.SetCurrentTimeline(
@@ -289,7 +296,8 @@ class Resolve:
         if len(preset_list) < 32:
             print("Please pour in the H.265 render preset first.")
         elif len(preset_list) > 33:
-            print("There are too many custom render presets, please specify it.")
+            print(
+                "There are too many custom render presets, please specify it.")
         else:
             # 加载 H.265 渲染预设.
             proxy_preset = preset_list[-1]
@@ -324,12 +332,14 @@ if __name__ == "__main__":
     # Get commandline arguments
     parser = argparse.ArgumentParser(
         description="Proxy is a commandline tool to automatic import clips,"
-        "create timelines, add to render queue using the predefined preset"
-        "quickly and easily."
+                    "create timelines, add to render queue using the predefined"
+                    "preset quickly and easily."
     )
-    parser.add_argument("input", help="Input path of media.", action="store", type=str)
+    parser.add_argument("input", help="Input path of media.", action="store",
+                        type=str)
     parser.add_argument(
-        "output", help="Output path of proxy rendering.", action="store", type=str
+        "output", help="Output path of proxy rendering.", action="store",
+        type=str
     )
     args = parser.parse_args()
 
@@ -340,7 +350,8 @@ if __name__ == "__main__":
     media_parent_path = args.input
     if not os.path.exists(args.output):
         log.debug(
-            f"'{args.output}' doesn't exist, please ensure this directory exists.\n"
+            f"'{args.output}' doesn't exist, please ensure this directory "
+            f"exists.\n "
         )
         parser.print_help()
         sys.exit()
@@ -362,7 +373,8 @@ if __name__ == "__main__":
         if int(res.split("x")[1]) <= 1080:
             timeline_width = res.split("x")[0]
             timeline_height = res.split("x")[1]
-            r.create_new_timeline(res, int(timeline_width), int(timeline_height))
+            r.create_new_timeline(res, int(timeline_width),
+                                  int(timeline_height))
         else:
             timeline_width = int(int(res.split("x")[0]) / 2)
             timeline_height = int(int(res.split("x")[1]) / 2)
@@ -374,7 +386,9 @@ if __name__ == "__main__":
     # 将所有时间线以 H.265 的渲染预设添加到渲染队列
     r.add_render_job()
 
-    # 开始渲染之前，暂停程序，向用户确认是否有添加 Burn-in，同时给用户时间确认其他参数是否正确。然后开始渲染。
+    # Before starting rendering, pause the program, confirm to the user if
+    # Burn-in has been added, and give the user time to confirm that other
+    # parameters are correct. Then start rendering.
     if (
         input(
             "The program is paused, please add burn-in manually, then enter 'y'"

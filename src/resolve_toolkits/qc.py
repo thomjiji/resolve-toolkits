@@ -75,9 +75,8 @@ class QC(Resolve):
     def create_and_change_timeline(
         self, timeline_name: str, width: int, height: int, fps: int
     ) -> None:
-        """
-        Simply create empty timeline and change its resolution to inputs width and height.
-        Used for create_new_timeline() function.
+        """Simply create empty timeline and change its resolution to inputs
+        width and height. Used for create_new_timeline() function.
         """
         self.media_pool.CreateEmptyTimeline(timeline_name)
         current_timeline = self.project.GetCurrentTimeline()
@@ -87,12 +86,9 @@ class QC(Resolve):
         current_timeline.SetSetting("timelineFrameRate", str(fps))
 
     def create_timeline_qc(self):
-        """
-        In the _Timeline bin under each bin of the media pool, create a new
+        """In the _Timeline bin under each bin of the media pool, create a new
         timeline based on the resolution and frame rate of the clip under that
         bin.
-
-        :return: None
         """
         for subfolder in self.root_folder.GetSubFolderList():
             for folder in subfolder.GetSubFolderList():
@@ -108,8 +104,8 @@ class QC(Resolve):
                     )
 
     def get_bin_res_and_fps(self, bin_name: str) -> Dict[str, str]:
-        """Get the resolution and frame rate of all clips under the given bin_name,
-        return a dict.
+        """Get the resolution and frame rate of all clips under the given
+        bin_name, return a dict.
 
         Parameters
         ----------
@@ -134,7 +130,8 @@ class QC(Resolve):
         for i in subfolders_list:
             self.media_pool.AddSubFolder(self.root_folder, i)
             if is_camera_dir(i):
-                self.media_pool.AddSubFolder(self.get_subfolder_by_name(i), "Timeline")
+                self.media_pool.AddSubFolder(self.get_subfolder_by_name(i),
+                                             "Timeline")
 
     def append_to_timeline(self) -> None:
         for subfolder in self.root_folder.GetSubFolderList():
@@ -151,7 +148,8 @@ class QC(Resolve):
                     )
                     if not self.project.SetCurrentTimeline(current_timeline):
                         log.debug(
-                            "append_to_timeline() project.SetCurrentTimeline failed."
+                            "append_to_timeline() project.SetCurrentTimeline"
+                            "jfailed."
                         )
                     self.media_pool.AppendToTimeline(clip)
                     self.set_clip_colorspace(clip)
@@ -190,7 +188,8 @@ class QC(Resolve):
             color_space = camera_log_key[-1]
         if clip.SetClipProperty("Input Color Space", color_space):
             log.info(
-                f"Set input color space {color_space} for {clip.GetName()} succeed."
+                f"Set input color space {color_space} for {clip.GetName()} "
+                f"succeed. "
             )
 
 
@@ -198,16 +197,17 @@ if __name__ == "__main__":
     # 检查用户是否提供了正确的 argv。
     if len(sys.argv) < 2:
         log.debug(
-            "\n- Usage: python3 qc.py [media path]. \n- Please ensure this directory exist."
+            "\n- Usage: python3 qc.py [media path]. \n- Please ensure this "
+            "directory exist. "
         )
-        # print("Usage: python3 qc.py [media path]. \nPlease ensure this directory exist.")
         sys.exit()
     else:
         media_parent_path: str = sys.argv[1]
 
     r = QC(media_parent_path)
 
-    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin
+    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。
+    # 导入素材到对应的 bin
     subfolders_name = get_subfolders_name(r.media_fullpath_list)
     r.create_bin(subfolders_name)
     r.import_clip(one_by_one=True)
