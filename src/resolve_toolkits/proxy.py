@@ -33,14 +33,12 @@ def absolute_file_paths(path: str) -> list:
     """Walk through the path, add the absolute paths of all files under the
     path to a list, and finally return the list.
 
-    Parameters
-    ----------
-    path
-        the input media path for parse files under it.
+    Args:
+        path: the input media path for parse files under it.
 
-    Return
-    ------
-    list
+    Returns:
+        A list containing all the abs path (str) of files under input path.
+
     """
     absolute_file_path_list = []
     for directory_path, _, filenames in os.walk(path):
@@ -55,13 +53,12 @@ def get_subfolders_name(source_media_full_path: List[str]) -> List[str]:
     """Extract sub-folder name from media storage full path.
     For creating sub-folder in the media pool.
 
-    Parameters
-    ----------
-    source_media_full_path
+    Args:
+        source_media_full_path: source media full path list.
 
-    Returns
-    -------
-    A list containing the names of the folders under the given path
+    Returns:
+        A list containing the names of the folders under the given path.
+
     """
     return [os.path.split(i)[1] for i in source_media_full_path]
 
@@ -69,6 +66,14 @@ def get_subfolders_name(source_media_full_path: List[str]) -> List[str]:
 def get_sorted_path(path: str) -> list:
     """Get the absolute paths of all files from the given path, then sort the
     absolute paths, and finally return a list of sorted absolute paths.
+
+    Args:
+        path: The input path. The abs paths of all files in its subdirectories
+            will be sorted.
+
+    Returns:
+        A list containing all abs paths that have been sorted.
+
     """
     filename_and_fullpath_dict = {
         os.path.basename(os.path.splitext(path)[0]): path
@@ -84,9 +89,31 @@ def get_sorted_path(path: str) -> list:
 
 
 class Resolve:
-    """Resolve class"""
+    """Resolve class
+
+    Attributes:
+        media_parent_path:
+        proxy_parent_path:
+
+        resolve: resolve object, the beginning of all the other object of
+            DaVinci Resolve.
+        project_manager:
+        project:
+        media_storage:
+        media_pool:
+        root_folder:
+        current_timeline:
+        media_fullpath_list:
+    """
 
     def __init__(self, input_path: str, output_path=None):
+        """Initialize some necessary objects.
+
+        Args:
+            input_path: the media path.
+            output_path: the proxy path.
+
+        """
         self.media_parent_path = input_path
         self.proxy_parent_path = output_path
 
@@ -96,13 +123,17 @@ class Resolve:
         self.media_storage = self.resolve.GetMediaStorage()
         self.media_pool = self.project.GetMediaPool()
         self.root_folder = self.media_pool.GetRootFolder()
-        self.timeline = self.project.GetCurrentTimeline()
+        self.current_timeline = self.project.GetCurrentTimeline()
         self.media_fullpath_list = self.media_storage.GetSubFolderList(
             self.media_parent_path
         )
 
     def get_all_timeline(self) -> list:
         """Get all existing timelines. Return a list containing timeline object.
+
+        Returns:
+            A list containing all the timeline object in the media pool.
+
         """
         all_timeline = []
         for timeline_index in range(1, self.project.GetTimelineCount() + 1, 1):
@@ -110,7 +141,8 @@ class Resolve:
         return all_timeline
 
     def get_timeline_by_name(self, timeline_name: str):
-        """Get timeline object by name."""
+        """Get timeline object by name.
+        """
         all_timeline = self.get_all_timeline()
         timeline_dict = {timeline.GetName(): timeline for timeline in
                          all_timeline}
@@ -135,16 +167,16 @@ class Resolve:
 
     def import_clip(self, one_by_one=False) -> None:
         """Import footage from media storage into the corresponding subfolder of
-        the media pool root folder. Filter out the files with suffix in the
-        INVALID_EXTENSION list before importing. If one_by_one parameter is
-        specified as True, then it will be imported one by one, which is
-        relatively slow.
+        the media pool root folder.
 
-        Parameters
-        ----------
-        one_by_one
-            If this parameter is specified as True, it will be imported one
-            by one, which is relatively slow.
+        Filter out the files with suffix in the INVALID_EXTENSION list before
+        importing. If one_by_one parameter is specified as True, then it will
+        be imported one by one, which is relatively slow.
+
+        Args:
+            one_by_one: If this parameter is specified as True, it will be
+            imported one by one, which is relatively slow.
+
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
 
@@ -182,13 +214,12 @@ class Resolve:
                 self.media_pool.ImportMedia(abs_media_path)
 
     def get_resolution(self) -> List[str]:
-        """Get all clips resolution, return a list consist of all resolution string.
-
-        Parameters
-            None
+        """Get all clips resolution, return a list consist of all resolution
+        string.
 
         Returns
-            List[str]
+        -------
+            A list containing all the resolution information.
         """
         all_clips_resolution = []
         for subfolder in self.root_folder.GetSubFolderList():
