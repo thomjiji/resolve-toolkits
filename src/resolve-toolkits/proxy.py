@@ -4,9 +4,8 @@ import argparse
 import os
 import sys
 import logging
-from typing import List, Union
+from typing import List
 from resolve_init import GetResolve
-from pybmd import timeline
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 

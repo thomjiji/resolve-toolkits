@@ -29,10 +29,10 @@ def absolute_file_paths(path: str) -> list:
     """Get the absolute paths of all files under a given path."""
     absolute_file_path_list = []
     for directory_path, _, filenames in os.walk(path):
-        for f in filenames:
-            if f.split(".")[-1] != "DS_Store":
+        for filename in filenames:
+            if filename.split(".")[-1] != "DS_Store":
                 absolute_file_path_list.append(
-                    os.path.abspath(os.path.join(directory_path, f))
+                    os.path.abspath(os.path.join(directory_path, filename))
                 )
     return absolute_file_path_list
 
@@ -129,9 +129,9 @@ class QC(Resolve):
 
         return bin_res_fps_dict
 
-    def create_bin(self, subfolders_name: list):
+    def create_bin(self, subfolders_list: list):
         """Create _Timeline bin under each camera bin in the media pool."""
-        for i in subfolders_name:
+        for i in subfolders_list:
             self.media_pool.AddSubFolder(self.root_folder, i)
             if is_camera_dir(i):
                 self.media_pool.AddSubFolder(self.get_subfolder_by_name(i), "Timeline")
