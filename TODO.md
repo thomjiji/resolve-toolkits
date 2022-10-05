@@ -1,0 +1,4 @@
+- [BUG] qc.py timeline name 29p need to be 29.97p
+- [BUG] proxy.py set_project_color_management doesn't work
+- [Need more logging to check program running status
+- resolve-ui add a button to clear all the content in the DaVinci Resolve's media pool, for dev purpose.

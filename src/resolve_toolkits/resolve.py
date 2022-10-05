@@ -42,7 +42,7 @@ class Resolve:
     def get_timeline_by_name(self, timeline_name: str) -> bmd_timeline.Timeline:
         """Get timeline object by name."""
         all_timeline = self.get_all_timeline()
-        timeline_dict = {timeline.get_name(): timeline for timeline in
+        timeline_dict = {timeline.GetName(): timeline for timeline in
                          all_timeline}
         return timeline_dict.get(timeline_name, "")
 

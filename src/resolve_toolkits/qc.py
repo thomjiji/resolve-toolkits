@@ -3,7 +3,8 @@ import sys
 from typing import Dict, List
 import os
 import logging
-from proxy import Resolve
+from proxy import Proxy
+from resolve import Resolve
 
 # Set up logger
 log = logging.getLogger("qc_logger")
@@ -15,7 +16,8 @@ ch.setLevel(logging.DEBUG)
 
 # create formatter
 formatter = logging.Formatter(
-    "%(asctime)s - %(name)s - %(levelname)s: %(message)s", datefmt="%H:%M:%S"
+    "%(levelname)s - %(asctime)s - %(name)s at %(lineno)s: %(message)s",
+    datefmt="%H:%M:%S"
 )
 
 # add formatter to ch
@@ -60,9 +62,14 @@ def is_camera_dir(text: str) -> bool:
 
 
 class QC(Resolve):
-    def __init__(self, path: str):
-        self.path = path
-        super().__init__(self.path)
+    def __init__(self, input_path: str):
+        super().__init__()
+
+        self.media_parent_path = input_path
+        self.proxy = Proxy(self.media_parent_path)
+        self.media_fullpath_list = self.media_storage.GetSubFolderList(
+            self.media_parent_path
+        )
         self.camera_log_dict = {
             "S-Gamut3.Cine/S-Log3": ["A7S3", "FX3", "FX6", "FX9", "FS7", "Z90"],
             "Panasonic V-Gamut/V-Log": ["GH5", "GH5M2", "S1H", "GH5S", "S5"],
@@ -148,8 +155,8 @@ class QC(Resolve):
                     )
                     if not self.project.SetCurrentTimeline(current_timeline):
                         log.debug(
-                            "append_to_timeline() project.SetCurrentTimeline"
-                            "jfailed."
+                            "append_to_timeline() project.SetCurrentTimeline "
+                            "failed."
                         )
                     self.media_pool.AppendToTimeline(clip)
                     self.set_clip_colorspace(clip)
@@ -171,11 +178,11 @@ class QC(Resolve):
         clip_path = clip.GetClipProperty("File Path")
         if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
             cam_name = clip_path.split("\\")[
-                clip_path.split("\\").index(os.path.basename(self.path)) + 1
+                clip_path.split("\\").index(os.path.basename(self.media_parent_path)) + 1
             ].split("#")[0]
         else:
             cam_name = clip_path.split("/")[
-                clip_path.split("/").index(os.path.basename(self.path)) + 1
+                clip_path.split("/").index(os.path.basename(self.media_parent_path)) + 1
             ].split("#")[0]
         camera_log_key = list(self.camera_log_dict.keys())
         camera_log_val = list(self.camera_log_dict.values())
@@ -204,18 +211,18 @@ if __name__ == "__main__":
     else:
         media_parent_path: str = sys.argv[1]
 
-    r = QC(media_parent_path)
+    qc = QC(media_parent_path)
 
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。
     # 导入素材到对应的 bin
-    subfolders_name = get_subfolders_name(r.media_fullpath_list)
-    r.create_bin(subfolders_name)
-    r.import_clip(one_by_one=True)
+    subfolders_name = get_subfolders_name(qc.media_fullpath_list)
+    qc.create_bin(subfolders_name)
+    qc.proxy.import_clip(one_by_one=True)
 
     # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
-    r.create_timeline_qc()
+    qc.create_timeline_qc()
 
     # 导入素材到对应时间线
-    r.append_to_timeline()
+    qc.append_to_timeline()
 
-    r.set_project_color_management()
+    qc.set_project_color_management()

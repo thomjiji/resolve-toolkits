@@ -5,7 +5,7 @@ import os
 import sys
 import logging
 from typing import List
-from resolve_init import GetResolve
+from resolve import Resolve
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 
@@ -19,7 +19,8 @@ ch.setLevel(logging.DEBUG)
 
 # create formatter
 formatter = logging.Formatter(
-    "%(levelname)s - %(asctime)s - %(name)s: %(message)s", datefmt="%H:%M:%S"
+    "%(levelname)s - %(asctime)s - %(name)s at %(lineno)s: %(message)s",
+    datefmt="%H:%M:%S"
 )
 
 # add formatter to ch
@@ -88,43 +89,28 @@ def get_sorted_path(path: str) -> list:
     return filename_and_fullpath_value
 
 
-class Resolve:
-    """Resolve class
+class Proxy(Resolve):
+    """Proxy class
 
     Attributes:
         media_parent_path:
         proxy_parent_path:
-
-        resolve: resolve object, the beginning of all the other object of
-            DaVinci Resolve.
-        project_manager:
-        project:
-        media_storage:
-        media_pool:
-        root_folder:
-        current_timeline:
         media_fullpath_list:
 
     """
 
-    def __init__(self, input_path: str, output_path=None):
+    def __init__(self, input_path: str, output_path: str = None):
         """Initialize some necessary objects.
 
         Args:
             input_path: the media path.
             output_path: the proxy path.
+            media_fullpath_list:
 
         """
+        super().__init__()
         self.media_parent_path = input_path
         self.proxy_parent_path = output_path
-
-        self.resolve = GetResolve()
-        self.project_manager = self.resolve.GetProjectManager()
-        self.project = self.project_manager.GetCurrentProject()
-        self.media_storage = self.resolve.GetMediaStorage()
-        self.media_pool = self.project.GetMediaPool()
-        self.root_folder = self.media_pool.GetRootFolder()
-        self.current_timeline = self.project.GetCurrentTimeline()
         self.media_fullpath_list = self.media_storage.GetSubFolderList(
             self.media_parent_path
         )
@@ -149,14 +135,14 @@ class Resolve:
                          all_timeline}
         return timeline_dict.get(timeline_name, "")
 
-    def get_subfolder_by_name(self, subfolder_name: str):
-        """Get subfolder (Folder object) under the root folder in the media
-        pool.
-        """
-        all_subfolder = self.root_folder.GetSubFolderList()
-        subfolder_dict = {subfolder.GetName(): subfolder for subfolder in
-                          all_subfolder}
-        return subfolder_dict.get(subfolder_name, "")
+    # def get_subfolder_by_name(self, subfolder_name: str):
+    #     """Get subfolder (Folder object) under the root folder in the media
+    #     pool.
+    #     """
+    #     all_subfolder = self.root_folder.GetSubFolderList()
+    #     subfolder_dict = {subfolder.GetName(): subfolder for subfolder in
+    #                       all_subfolder}
+    #     return subfolder_dict.get(subfolder_name, "")
 
     def create_bin(self, subfolders_list: list):
         """Create sub-folder in the media pool root folder."""
@@ -206,13 +192,14 @@ class Resolve:
                         abs_media_path.split("\\").index(media_parent_dir) + 1
                         ]
                     current_folder = self.get_subfolder_by_name(name)
+                    self.media_pool.SetCurrentFolder(current_folder)
+                    self.media_pool.ImportMedia(abs_media_path)
                 else:
-                    current_folder = self.get_subfolder_by_name(
-                        f"{abs_media_path.split('/')[abs_media_path.split('/').index(media_parent_dir) + 1]} "
-                    )
-
-                self.media_pool.SetCurrentFolder(current_folder)
-                self.media_pool.ImportMedia(abs_media_path)
+                    name = abs_media_path.split('/')[
+                        abs_media_path.split('/').index(media_parent_dir) + 1]
+                    current_folder = self.get_subfolder_by_name(name)
+                    self.media_pool.SetCurrentFolder(current_folder)
+                    self.media_pool.ImportMedia(abs_media_path)
 
     def get_resolution(self) -> List[str]:
         """Get all clips resolution, return a list consist of all resolution
@@ -390,49 +377,49 @@ if __name__ == "__main__":
     else:
         proxy_parent_path = args.output
 
-    r = Resolve(media_parent_path, proxy_parent_path)
-    r.set_project_color_management()
+    p = Proxy(media_parent_path, proxy_parent_path)
+    p.set_project_color_management()
 
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
-    subfolders_name = get_subfolders_name(r.media_fullpath_list)
-    r.create_bin(subfolders_name)
-    r.import_clip()
+    subfolders_name = get_subfolders_name(p.media_fullpath_list)
+    p.create_bin(subfolders_name)
+    p.import_clip()
 
     # 根据媒体池所有的素材分辨率新建不同的时间线。
-    for res in r.get_resolution():
+    for res in p.get_resolution():
         if "x" not in res:
             continue
         if int(res.split("x")[1]) <= 1080:
             timeline_width = res.split("x")[0]
             timeline_height = res.split("x")[1]
-            r.create_new_timeline(res, int(timeline_width),
+            p.create_new_timeline(res, int(timeline_width),
                                   int(timeline_height))
         else:
             timeline_width = int(int(res.split("x")[0]) / 2)
             timeline_height = int(int(res.split("x")[1]) / 2)
-            r.create_new_timeline(res, timeline_width, timeline_height)
+            p.create_new_timeline(res, timeline_width, timeline_height)
 
     # 导入素材到对应时间线
-    r.append_to_timeline()
+    p.append_to_timeline()
 
     # 将所有时间线以 H.265 的渲染预设添加到渲染队列
-    r.add_render_job()
+    p.add_render_job()
 
     # Before starting rendering, pause the program, confirm to the user if
     # Burn-in has been added, and give the user time to confirm that other
     # parameters are correct. Then start rendering.
-    if (
-        input(
-            "The program is paused, please add burn-in manually, then enter 'y'"
-            "to start rendering. Enter 'n' to exit the program. y/n?"
-        )
-        == "y"
-    ):
-        r.project.StartRendering(isInteractiveMode=True)
+    if input(
+        "The program is paused, please add burn-in manually, then enter "
+        "'y' to start rendering. Enter 'n' to exit the program. y/n?"
+    ) == "y":
+        p.project.StartRendering(isInteractiveMode=True)
 
     # for render_job in project.GetRenderJobList():
     #     pprint(render_job)
 
     # # Job status check
-    # job_id_list = [render_job.get('JobId') for render_job in project.GetRenderJobList()]
+    # job_id_list = [
+    #     render_job.get('JobId')
+    #     for render_job in r.project.GetRenderJobList()
+    # ]
     # print(project.GetRenderJobStatus(job_id_list[1]))
