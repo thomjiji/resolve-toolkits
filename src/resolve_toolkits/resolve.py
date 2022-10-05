@@ -5,16 +5,30 @@ from pybmd import folder as bmd_folder
 
 
 class Resolve:
-    """Resolve class"""
+    """Resolve class
+
+    Attributes:
+        resolve: resolve object, the beginning of all the other object of
+            DaVinci Resolve.
+        project_manager:
+        project:
+        media_storage:
+        media_pool:
+        root_folder:
+        current_timeline:
+
+    """
 
     def __init__(self):
+        """Initialize some necessary objects.
+        """
         self.resolve = GetResolve()
         self.project_manager = self.resolve.GetProjectManager()
         self.project = self.project_manager.GetCurrentProject()
         self.media_storage = self.resolve.GetMediaStorage()
         self.media_pool = self.project.GetMediaPool()
         self.root_folder = self.media_pool.GetRootFolder()
-        self.timeline = self.project.GetCurrentTimeline()
+        self.current_timeline = self.project.GetCurrentTimeline()
 
     def get_all_timeline(self) -> List[bmd_timeline.Timeline]:
         """Get all existing timelines. Return a list containing all the timeline
@@ -29,8 +43,8 @@ class Resolve:
         """Get timeline object by name."""
         all_timeline = self.get_all_timeline()
         timeline_dict = {timeline.get_name(): timeline for timeline in
-                         all_timeline}  # type: ignore
-        return timeline_dict.get(timeline_name, "")  # type: ignore
+                         all_timeline}
+        return timeline_dict.get(timeline_name, "")
 
     def get_subfolder_by_name(self, subfolder_name: str) -> bmd_folder.Folder:
         """Get subfolder (Folder object) under the root folder in the media
@@ -41,4 +55,4 @@ class Resolve:
             subfolder.GetName(): subfolder
             for subfolder in all_subfolder
         }
-        return subfolder_dict.get(subfolder_name, "")  # type: ignore
+        return subfolder_dict.get(subfolder_name, "")

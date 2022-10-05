@@ -104,6 +104,7 @@ class Resolve:
         root_folder:
         current_timeline:
         media_fullpath_list:
+
     """
 
     def __init__(self, input_path: str, output_path=None):
@@ -175,7 +176,7 @@ class Resolve:
 
         Args:
             one_by_one: If this parameter is specified as True, it will be
-            imported one by one, which is relatively slow.
+                imported one by one, which is relatively slow.
 
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
