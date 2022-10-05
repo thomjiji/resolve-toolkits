@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-# Import modules for Resolve native API
 import argparse
 import os
 import sys
 import logging
-from typing import List
+from typing import List, Union
 from resolve_init import GetResolve
+from pybmd import timeline
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 
@@ -31,6 +31,18 @@ log.addHandler(ch)
 
 
 def absolute_file_paths(path: str) -> list:
+    """Walk through the path, add the absolute paths of all files under the
+    path to a list, and finally return the list.
+
+    Parameters
+    ----------
+    path
+        the input media path for parse files under it.
+
+    Return
+    ------
+    list
+    """
     absolute_file_path_list = []
     for directory_path, _, filenames in os.walk(path):
         for filename in filenames:
@@ -41,17 +53,24 @@ def absolute_file_paths(path: str) -> list:
 
 
 def get_subfolders_name(source_media_full_path: List[str]) -> List[str]:
-    """
-    Extract sub-folder name from media storage full path.
+    """Extract sub-folder name from media storage full path.
     For creating sub-folder in the media pool.
+
+    Parameters
+    ----------
+    source_media_full_path
+
+
+    Returns
+    -------
+    A list containing the names of the folders under the given path
     """
     return [os.path.split(i)[1] for i in source_media_full_path]
 
 
 def get_sorted_path(path: str) -> list:
-    """
-    Get the absolute paths of all files from the given path, then sort the absolute paths,
-    and finally return a list of sorted absolute paths.
+    """Get the absolute paths of all files from the given path, then sort the
+    absolute paths, and finally return a list of sorted absolute paths.
     """
     filename_and_fullpath_dict = {
         os.path.basename(os.path.splitext(path)[0]): path
@@ -67,6 +86,8 @@ def get_sorted_path(path: str) -> list:
 
 
 class Resolve:
+    """Resolve class"""
+
     def __init__(self, input_path: str, output_path=None):
         self.media_parent_path = input_path
         self.proxy_parent_path = output_path
@@ -96,31 +117,35 @@ class Resolve:
         return timeline_dict.get(timeline_name, "")
 
     def get_subfolder_by_name(self, subfolder_name: str):
-        """Get subfolder (Folder object) under the root folder in the media pool."""
+        """Get subfolder (Folder object) under the root folder in the media
+        pool.
+        """
         all_subfolder = self.root_folder.GetSubFolderList()
         subfolder_dict = {subfolder.GetName(): subfolder for subfolder in all_subfolder}
         return subfolder_dict.get(subfolder_name, "")
 
-    def create_bin(self, subfolders_name: list):
+    def create_bin(self, subfolders_list: list):
         """Create sub-folder in the media pool root folder."""
-        for i in subfolders_name:
+        for i in subfolders_list:
             self.media_pool.AddSubFolder(self.root_folder, i)
 
         if not self.get_subfolder_by_name("_Timeline"):
             return self.media_pool.AddSubFolder(self.root_folder, "_Timeline")
 
     def import_clip(self, one_by_one=False) -> None:
-        """
-        Import footage from media storage into the corresponding subfolder of the media
-        pool root folder. Filter out the files with suffix in the INVALID_EXTENSION list
-        before importing. If one_by_one parameter is specified as True, then it will be
-        imported one by one, which is relatively slow.
+        """Import footage from media storage into the corresponding subfolder of
+        the media pool root folder. Filter out the files with suffix in the
+        INVALID_EXTENSION list before importing. If one_by_one parameter is
+        specified as True, then it will be imported one by one, which is
+        relatively slow.
 
-        Args:
-            path (string): source media parent path, such as "素材".
+        Parameters
+        ----------
+        None
 
-        Returns:
-            None
+        Returns
+        -------
+        None
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
 
@@ -154,65 +179,92 @@ class Resolve:
                 self.media_pool.SetCurrentFolder(current_folder)
                 self.media_pool.ImportMedia(abs_media_path)
 
-    def get_resolution(self) -> list:
-        """Get all clips resolution, return a list consist of all resolution string."""
+    def get_resolution(self) -> List[str]:
+        """Get all clips resolution, return a list consist of all resolution string.
+
+        Parameters
+            None
+
+        Returns
+            List[str]
+        """
         all_clips_resolution = []
-        for bin in self.root_folder.GetSubFolderList():
+        for subfolder in self.root_folder.GetSubFolderList():
             # 排除 _Timeline bin
-            if bin.GetName() == "_Timeline":
+            if subfolder.GetName() == "_Timeline":
                 break
 
-            for clip in bin.GetClipList():
+            for clip in subfolder.GetClipList():
                 all_clips_resolution.append(clip.GetClipProperty("Resolution"))
             all_clips_resolution = list(dict.fromkeys(all_clips_resolution))
 
         return all_clips_resolution
 
     def create_and_change_timeline(
-        self, timeline_name: str, width: str, height: str
-    ) -> None:
-        """
-        Simply create empty timeline and change its resolution to inputs width and height.
-        Used for create_new_timeline() function.
+        self, timeline_name: str, width: int, height: int
+    ) -> bool:
+        """Simply create empty timeline and change its resolution to inputs
+        width and height. Used for `create_new_timeline()` function.
+
+        Parameters
+        ----------
+        timeline_name
+            The name of the timeline that will be created.
+        width
+            The width of the timeline that will be created.
+        height
+            The height of the timeline what will be created.
+
+        Returns
+        -------
+        None
         """
         self.media_pool.CreateEmptyTimeline(timeline_name)
         current_timeline = self.project.GetCurrentTimeline()
         current_timeline.SetSetting("useCustomSettings", "1")
         current_timeline.SetSetting("timelineResolutionWidth", str(width))
         current_timeline.SetSetting("timelineResolutionHeight", str(height))
-        current_timeline.SetSetting("timelineFrameRate", str(25))
+        return current_timeline.SetSetting("timelineFrameRate", str(25))
 
     def create_new_timeline(self, timeline_name: str, width: int, height: int) -> bool:
-        """
-        Create new timeline in the _Timeline bin (the last folder under root folder).
-        Check timeline duplication.
+        """Create new timeline in the _Timeline bin (the last folder under root
+        folder). Check timeline duplication.
 
-        :param timeline_name: The name of the timeline that will be created
-        :param width: The width of the timeline that will be created
-        :param height: The height of the timeline that will be created
-        :type timeline_name: str
-        :type width: int
-        :type height: int
+        Parameters
+        ----------
+        timeline_name
+            The name of the timeline that will be created.
+        width
+            The width of the timeline that will be created.
+        height
+            The height of the timeline what will be created.
+
+        Returns
+        -------
+        bool
         """
         self.media_pool.SetCurrentFolder(
             self.root_folder.GetSubFolderList()[-1]
-        )  # SetCurrentFolder 到 _Timeline bin 把时间线都建在这
+        )  # SetCurrentFolder to _Timeline bin to build the timeline here
 
         if self.project.GetTimelineCount() == 0:
-            self.create_and_change_timeline(timeline_name, str(width), str(height))
+            self.create_and_change_timeline(timeline_name, width, height)
             return True
+
+        existing_timeline_resolution = []
+        for existing_timeline in self.get_all_timeline():
+            existing_timeline_resolution.append(
+                f"{existing_timeline.GetSetting('timelineResolutionWidth')}"
+                f"x{existing_timeline.GetSetting('timelineResolutionHeight')}"
+            )
+        if f"{str(width)}x{str(height)}" not in existing_timeline_resolution:
+            return self.create_and_change_timeline(
+                timeline_name, width, height
+            )
         else:
-            existing_timeline_resolution = []
-            for existing_timeline in self.get_all_timeline():
-                existing_timeline_resolution.append(
-                    f"{existing_timeline.GetSetting('timelineResolutionWidth')}x{existing_timeline.GetSetting('timelineResolutionHeight')}"
-                )
-            if f"{str(width)}x{str(height)}" not in existing_timeline_resolution:
-                self.create_and_change_timeline(timeline_name, str(width), str(height))
-            else:
-                current_timeline = self.project.GetCurrentTimeline()
-                new_name = f"{current_timeline.GetName()}_{str(width)}x{str(height)}"
-                current_timeline.SetName(new_name)
+            current_timeline = self.project.GetCurrentTimeline()
+            new_name = f"{current_timeline.GetName()}_{str(width)}x{str(height)}"
+            return current_timeline.SetName(new_name)
 
     def append_to_timeline(self) -> None:
         """Append to timeline"""
@@ -258,8 +310,8 @@ class Resolve:
                 self.project.AddRenderJob()
 
     def set_project_color_management(self):
-        """
-        Set the project color management to DaVinci YRGB and timeline color space to Rec.709 Gamma 2.4.
+        """Set the project color management to DaVinci YRGB and timeline color
+        space to Rec.709 Gamma 2.4.
 
         #TODO 说一下为什么不设置 Rec.709-A 了
         """
@@ -272,8 +324,9 @@ if __name__ == "__main__":
 
     # Get commandline arguments
     parser = argparse.ArgumentParser(
-        description="Proxy is a commandline tool to automatic import clips, create timelines, add to render queue "
-        "using the predefined preset quickly and easily."
+        description="Proxy is a commandline tool to automatic import clips,"
+        "create timelines, add to render queue using the predefined preset"
+        "quickly and easily."
     )
     parser.add_argument("input", help="Input path of media.", action="store", type=str)
     parser.add_argument(
@@ -310,7 +363,7 @@ if __name__ == "__main__":
         if int(res.split("x")[1]) <= 1080:
             timeline_width = res.split("x")[0]
             timeline_height = res.split("x")[1]
-            r.create_new_timeline(res, timeline_width, timeline_height)
+            r.create_new_timeline(res, int(timeline_width), int(timeline_height))
         else:
             timeline_width = int(int(res.split("x")[0]) / 2)
             timeline_height = int(int(res.split("x")[1]) / 2)
@@ -325,7 +378,8 @@ if __name__ == "__main__":
     # 开始渲染之前，暂停程序，向用户确认是否有添加 Burn-in，同时给用户时间确认其他参数是否正确。然后开始渲染。
     if (
         input(
-            "The program is paused, please add burn-in manually, then enter 'y' to start rendering. Enter 'n' to exit the program. y/n?"
+            "The program is paused, please add burn-in manually, then enter 'y'"
+            "to start rendering. Enter 'n' to exit the program. y/n?"
         )
         == "y"
     ):

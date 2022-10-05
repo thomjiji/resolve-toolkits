@@ -1,9 +1,8 @@
 import re
 import sys
-from typing import List
-import os.path
+from typing import Dict, List
+import os
 import logging
-from pprint import pprint
 from proxy import Resolve
 
 # Set up logger
@@ -74,7 +73,7 @@ class QC(Resolve):
         }
 
     def create_and_change_timeline(
-        self, timeline_name: str, width: str, height: str, fps: int
+        self, timeline_name: str, width: int, height: int, fps: int
     ) -> None:
         """
         Simply create empty timeline and change its resolution to inputs width and height.
@@ -102,21 +101,30 @@ class QC(Resolve):
                 for res, fps in res_fps_dict.items():
                     timeline_name = f"{subfolder.GetName()}_{res}_{int(fps)}p"
                     self.create_and_change_timeline(
-                        timeline_name, res.split("x")[0], res.split("x")[1], int(fps)
+                        timeline_name,
+                        int(res.split("x")[0]),
+                        int(res.split("x")[1]),
+                        int(fps),
                     )
 
-    def get_bin_res_and_fps(self, bin_name: str):
-        """
-        Get the resolution and frame rate of all clips under the given bin_name,
+    def get_bin_res_and_fps(self, bin_name: str) -> Dict[str, str]:
+        """Get the resolution and frame rate of all clips under the given bin_name,
         return a dict.
 
-        :param bin_name: 媒体池已有的 camera bin
-        :return: 包含了媒体池该 camera bin 下所有素材的分辨率帧率的 dict，给 create_timeline_qc 使用
+        Parameters
+        ----------
+        bin_name
+            The existing camera bin in the media pool
+
+        Returns
+        -------
+        A dict containing the resolution and frame rate of all materials under
+        the camera bin in the media pool, used by `create_timeline_qc()`.
         """
         current_bin = self.get_subfolder_by_name(bin_name)
         bin_res_fps_dict = {
             clip.GetClipProperty("Resolution"): clip.GetClipProperty("FPS")
-            for clip in current_bin.GetClipList()
+            for clip in current_bin.GetClipList()  # type: ignore
         }
 
         return bin_res_fps_dict
