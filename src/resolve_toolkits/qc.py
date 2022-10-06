@@ -2,7 +2,7 @@
 
 import re
 import sys
-from typing import Dict, List, Union
+from typing import Union
 import os
 import logging
 from proxy import Proxy
@@ -43,7 +43,7 @@ def absolute_file_paths(path: str) -> list:
     return absolute_file_path_list
 
 
-def get_subfolders_name(path: List[str]) -> List[str]:
+def get_subfolders_name(path: list[str]) -> list[str]:
     """
     Extract sub-folder name from media storage full path.
     For creating sub-folder in the media pool.
@@ -144,7 +144,7 @@ class QC(Resolve):
                             int(fps),
                         )
 
-    def get_bin_res_and_fps(self, bin_name: str) -> Dict[str, float]:
+    def get_bin_res_and_fps(self, bin_name: str) -> dict[str, float]:
         """Get the resolution and frame rate of all clips under the given bin,
         return a dict.
 

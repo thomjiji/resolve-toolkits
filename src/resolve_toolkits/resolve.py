@@ -1,4 +1,3 @@
-from typing import Dict, List
 from resolve_init import GetResolve
 from pybmd import timeline as bmd_timeline
 from pybmd import folder as bmd_folder
@@ -30,7 +29,7 @@ class Resolve:
         self.root_folder = self.media_pool.GetRootFolder()
         self.current_timeline = self.project.GetCurrentTimeline()
 
-    def get_all_timeline(self) -> List[bmd_timeline.Timeline]:
+    def get_all_timeline(self) -> list[bmd_timeline.Timeline]:
         """Get all existing timelines. Return a list containing all the timeline
         object.
         """
@@ -51,7 +50,7 @@ class Resolve:
         pool.
         """
         all_subfolder = self.root_folder.GetSubFolderList()
-        subfolder_dict: Dict[str, bmd_folder.Folder] = {
+        subfolder_dict: dict[str, bmd_folder.Folder] = {
             subfolder.GetName(): subfolder
             for subfolder in all_subfolder
         }
