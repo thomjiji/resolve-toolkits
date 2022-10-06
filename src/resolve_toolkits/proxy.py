@@ -205,9 +205,9 @@ class Proxy(Resolve):
         """Get all clips resolution, return a list consist of all resolution
         string.
 
-        Returns
-        -------
+        Returns:
             A list containing all the resolution information.
+
         """
         all_clips_resolution = []
         for subfolder in self.root_folder.GetSubFolderList():
@@ -227,17 +227,14 @@ class Proxy(Resolve):
         """Simply create empty timeline and change its resolution to inputs
         width and height. Used for `create_new_timeline()` function.
 
-        Parameters
-        ----------
-        timeline_name
-            The name of the timeline that will be created.
-        width
-            The width of the timeline that will be created.
-        height
-            The height of the timeline what will be created.
+        Args:
+            timeline_name: The name of the timeline that will be created.
+            width: The width of the timeline that will be created.
+            height: The height of the timeline that will be created.
 
-        Returns
-        -------
+        Returns:
+            bool: If `SetSetting()` is all right, it will return True, otherwise
+                it will be False.
 
         """
         self.media_pool.CreateEmptyTimeline(timeline_name)
@@ -247,23 +244,20 @@ class Proxy(Resolve):
         current_timeline.SetSetting("timelineResolutionHeight", str(height))
         return current_timeline.SetSetting("timelineFrameRate", str(25))
 
-    def create_new_timeline(self, timeline_name: str, width: int,
-                            height: int) -> bool:
+    def create_new_timeline(
+        self, timeline_name: str, width: int, height: int
+    ) -> bool:
         """Create new timeline in the _Timeline bin (the last folder under root
         folder). Check timeline duplication.
 
-        Parameters
-        ----------
-        timeline_name
-            The name of the timeline that will be created.
-        width
-            The width of the timeline that will be created.
-        height
-            The height of the timeline what will be created.
+        Args:
+            timeline_name: The name of the timeline that will be created.
+            width: The width of the timeline that will be created.
+            height: The height of the timeline what will be created.
 
-        Returns
-        -------
-        bool
+        Returns:
+            bool
+
         """
         self.media_pool.SetCurrentFolder(
             self.root_folder.GetSubFolderList()[-1]

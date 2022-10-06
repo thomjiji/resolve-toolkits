@@ -1,10 +1,14 @@
+#!/usr/bin/env python3
+
 import re
 import sys
-from typing import Dict, List
+from typing import Dict, List, Union
 import os
 import logging
 from proxy import Proxy
 from resolve import Resolve
+
+DROP_FRAME_FPS = [23.98, 29.97, 59.94, 119.88]
 
 # Set up logger
 log = logging.getLogger("qc_logger")
@@ -63,8 +67,12 @@ def is_camera_dir(text: str) -> bool:
 
 class QC(Resolve):
     def __init__(self, input_path: str):
-        super().__init__()
+        """
 
+        Args:
+            input_path:
+        """
+        super().__init__()
         self.media_parent_path = input_path
         self.proxy = Proxy(self.media_parent_path)
         self.media_fullpath_list = self.media_storage.GetSubFolderList(
@@ -80,17 +88,34 @@ class QC(Resolve):
         }
 
     def create_and_change_timeline(
-        self, timeline_name: str, width: int, height: int, fps: int
-    ) -> None:
+        self,
+        timeline_name: str,
+        width: int,
+        height: int,
+        fps: Union[int, float]
+    ) -> bool:
         """Simply create empty timeline and change its resolution to inputs
-        width and height. Used for create_new_timeline() function.
+        width and height, and its frame rate to input fps. Used for
+        `create_new_timeline()` function.
+
+        Args:
+            timeline_name: The name of the timeline that will be created.
+            width: The width of the timeline that will be created.
+            height: The height of the timeline that will be created.
+            fps: The frame rate of the timeline that will be created.
+
+        Returns:
+            bool: If `SetSetting()` is all right, it will return True, otherwise
+                it will be False.
+
         """
         self.media_pool.CreateEmptyTimeline(timeline_name)
         current_timeline = self.project.GetCurrentTimeline()
         current_timeline.SetSetting("useCustomSettings", "1")
         current_timeline.SetSetting("timelineResolutionWidth", str(width))
         current_timeline.SetSetting("timelineResolutionHeight", str(height))
-        current_timeline.SetSetting("timelineFrameRate", str(fps))
+        return current_timeline.SetSetting("timelineFrameRate",
+                                           str(fps))  # TODO
 
     def create_timeline_qc(self):
         """In the _Timeline bin under each bin of the media pool, create a new
@@ -102,32 +127,39 @@ class QC(Resolve):
                 self.media_pool.SetCurrentFolder(folder)
                 res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
                 for res, fps in res_fps_dict.items():
-                    timeline_name = f"{subfolder.GetName()}_{res}_{int(fps)}p"
-                    self.create_and_change_timeline(
-                        timeline_name,
-                        int(res.split("x")[0]),
-                        int(res.split("x")[1]),
-                        int(fps),
-                    )
+                    if fps in DROP_FRAME_FPS:
+                        timeline_name = f"{subfolder.GetName()}_{res}_{fps}p"
+                        self.create_and_change_timeline(
+                            timeline_name,
+                            int(res.split("x")[0]),
+                            int(res.split("x")[1]),
+                            fps,
+                        )
+                    else:
+                        timeline_name = f"{subfolder.GetName()}_{res}_{int(fps)}p"
+                        self.create_and_change_timeline(
+                            timeline_name,
+                            int(res.split("x")[0]),
+                            int(res.split("x")[1]),
+                            int(fps),
+                        )
 
-    def get_bin_res_and_fps(self, bin_name: str) -> Dict[str, str]:
-        """Get the resolution and frame rate of all clips under the given
-        bin_name, return a dict.
+    def get_bin_res_and_fps(self, bin_name: str) -> Dict[str, float]:
+        """Get the resolution and frame rate of all clips under the given bin,
+        return a dict.
 
-        Parameters
-        ----------
-        bin_name
-            The existing camera bin in the media pool
+        Args:
+            bin_name: The existing camera bin in the media pool.
 
-        Returns
-        -------
-        A dict containing the resolution and frame rate of all materials under
-        the camera bin in the media pool, used by `create_timeline_qc()`.
+        Returns:
+            A dict containing the resolution and frame rate of all shots under
+            the camera bin in the media pool, used by `create_timeline_qc()`.
+
         """
         current_bin = self.get_subfolder_by_name(bin_name)
         bin_res_fps_dict = {
             clip.GetClipProperty("Resolution"): clip.GetClipProperty("FPS")
-            for clip in current_bin.GetClipList()  # type: ignore
+            for clip in current_bin.GetClipList()
         }
 
         return bin_res_fps_dict
@@ -150,13 +182,24 @@ class QC(Resolve):
                 ):
                     res = clip.GetClipProperty("Resolution")
                     fps = clip.GetClipProperty("FPS")
-                    current_timeline = self.get_timeline_by_name(
-                        f"{subfolder.GetName()}_{res}_{int(fps)}p"
-                    )
+                    if fps in DROP_FRAME_FPS:
+                        current_timeline_name = f"{subfolder.GetName()}_" \
+                                                f"{res}_{fps}p"
+                        current_timeline = self.get_timeline_by_name(
+                            current_timeline_name
+                        )
+                    else:
+                        current_timeline_name = f"{subfolder.GetName()}_" \
+                                                f"{res}_{int(fps)}p"
+                        current_timeline = self.get_timeline_by_name(
+                            current_timeline_name
+                        )
+
                     if not self.project.SetCurrentTimeline(current_timeline):
                         log.debug(
-                            "append_to_timeline() project.SetCurrentTimeline "
-                            "failed."
+                            f"append_to_timeline() "
+                            f"project.SetCurrentTimeline() failed. Current "
+                            f"timeline is {current_timeline}"
                         )
                     self.media_pool.AppendToTimeline(clip)
                     self.set_clip_colorspace(clip)
@@ -178,12 +221,14 @@ class QC(Resolve):
         clip_path = clip.GetClipProperty("File Path")
         if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
             cam_name = clip_path.split("\\")[
-                clip_path.split("\\").index(os.path.basename(self.media_parent_path)) + 1
-            ].split("#")[0]
+                clip_path.split("\\").index(
+                    os.path.basename(self.media_parent_path)) + 1
+                ].split("#")[0]
         else:
             cam_name = clip_path.split("/")[
-                clip_path.split("/").index(os.path.basename(self.media_parent_path)) + 1
-            ].split("#")[0]
+                clip_path.split("/").index(
+                    os.path.basename(self.media_parent_path)) + 1
+                ].split("#")[0]
         camera_log_key = list(self.camera_log_dict.keys())
         camera_log_val = list(self.camera_log_dict.values())
         try:
