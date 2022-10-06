@@ -111,11 +111,11 @@ class QC(Resolve):
         """
         self.media_pool.CreateEmptyTimeline(timeline_name)
         current_timeline = self.project.GetCurrentTimeline()
+        # TODO Needs a mechanism to track SetSetting() status
         current_timeline.SetSetting("useCustomSettings", "1")
         current_timeline.SetSetting("timelineResolutionWidth", str(width))
         current_timeline.SetSetting("timelineResolutionHeight", str(height))
-        return current_timeline.SetSetting("timelineFrameRate",
-                                           str(fps))  # TODO
+        return current_timeline.SetSetting("timelineFrameRate", str(fps))
 
     def create_timeline_qc(self):
         """In the _Timeline bin under each bin of the media pool, create a new

@@ -19,7 +19,7 @@ ch.setLevel(logging.DEBUG)
 
 # create formatter
 formatter = logging.Formatter(
-    "%(levelname)s - %(asctime)s - %(name)s at %(lineno)s: %(message)s",
+    "%(levelname)s-%(asctime)s-%(name)s at %(lineno)s: %(message)s",
     datefmt="%H:%M:%S"
 )
 
@@ -105,7 +105,6 @@ class Proxy(Resolve):
         Args:
             input_path: the media path.
             output_path: the proxy path.
-            media_fullpath_list:
 
         """
         super().__init__()
@@ -333,20 +332,47 @@ class Proxy(Resolve):
         """Set the project color management to DaVinci YRGB and timeline color
         space to Rec.709 Gamma 2.4.
 
-        #TODO 说一下为什么不设置 Rec.709-A 了
+        Notes:
+            `SetSetting()` will fail as long as the output color space is
+        changed in the first place, not "same as timeline". This is
+        acceptable, because the default output color space for newly created
+        projects is "Same as Timeline". In this case, `SetSetting()` to "Same as
+        Timeline" will succeed, even if this operation is not necessary. If the
+        project's default output color space is not "Same as Timeline",
+        there needs to be a mechanism to handle this.  # TODO
+
+
+        # TODO 说一下为什么不设置 Rec.709-A 了
         """
-        self.project.SetSetting("colorScienceMode", "davinciYRGB")
-        self.project.SetSetting("colorSpaceTimeline", "Rec.709 Gamma 2.4")
-        self.project.SetSetting("colorSpaceOutput", "Same as Timeline")
+        if self.project.SetSetting("colorScienceMode", "davinciYRGB"):
+            timeline_color_space = self.project.GetSetting('colorSpaceTimeline')
+            output_colorspace = self.project.GetSetting('colorSpaceOutput')
+            log.info("Set Project Color Management to DaVinci YRGB")
+            log.info(f"Timeline Color Space is {timeline_color_space}")
+            log.info(f"Output Color Space is {output_colorspace}")
+            log.info("----------------")
+
+        if self.project.SetSetting("colorSpaceTimeline", "Rec.709 Gamma 2.4"):
+            timeline_color_space = self.project.GetSetting('colorSpaceTimeline')
+            output_colorspace = self.project.GetSetting('colorSpaceOutput')
+            log.info("Set Timeline Color Space to Rec.709 Gamma 2.4")
+            log.info(f"Timeline Color Space is {timeline_color_space}")
+            log.info(f"Output Color Space is {output_colorspace}")
+            log.info("----------------")
+
+        if self.project.SetSetting("colorSpaceOutput", "Same as Timeline"):
+            log.info("Set Output Color Space to 'Same as Timeline'")
+        else:
+            log.debug("Failed to set Output Color Space to 'Same as Timeline'")
 
 
 if __name__ == "__main__":
 
     # Get commandline arguments
     parser = argparse.ArgumentParser(
-        description="Proxy is a commandline tool to automatic import clips,"
+        description="Proxy is a commandline tool to automatic import clips, "
                     "create timelines, add to render queue using the predefined"
-                    "preset quickly and easily."
+                    " preset quickly and easily."
     )
     parser.add_argument("input", help="Input path of media.", action="store",
                         type=str)
