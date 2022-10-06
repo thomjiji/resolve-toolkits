@@ -4,7 +4,6 @@ import argparse
 import os
 import sys
 import logging
-from typing import List
 from resolve import Resolve
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
@@ -50,7 +49,7 @@ def absolute_file_paths(path: str) -> list:
     return absolute_file_path_list
 
 
-def get_subfolders_name(source_media_full_path: List[str]) -> List[str]:
+def get_subfolders_name(source_media_full_path: list[str]) -> list[str]:
     """Extract sub-folder name from media storage full path.
     For creating sub-folder in the media pool.
 
@@ -171,7 +170,7 @@ class Proxy(Resolve):
                     self.media_pool.SetCurrentFolder(current_folder)
                     self.media_pool.ImportMedia(abs_media_path)
 
-    def get_resolution(self) -> List[str]:
+    def get_resolution(self) -> list[str]:
         """Get all clips resolution, return a list consist of all resolution
         string.
 
