@@ -12,20 +12,20 @@ INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 log = logging.getLogger("proxy_logger")
 log.setLevel(logging.DEBUG)
 
-# create console handler and set level to debug
+# Create console handler and set level to debug
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
-# create formatter
+# Create formatter
 formatter = logging.Formatter(
     "%(levelname)s-%(asctime)s-%(name)s at %(lineno)s: %(message)s",
     datefmt="%H:%M:%S"
 )
 
-# add formatter to ch
+# Add formatter to ch
 ch.setFormatter(formatter)
 
-# add ch to logger
+# Add ch to logger
 log.addHandler(ch)
 
 
