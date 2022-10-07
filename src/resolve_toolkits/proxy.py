@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import re
 import sys
 import logging
 from resolve import Resolve
@@ -18,7 +19,7 @@ ch.setLevel(logging.DEBUG)
 
 # Create formatter
 formatter = logging.Formatter(
-    "%(levelname)s-%(asctime)s-%(name)s at %(lineno)s: %(message)s",
+    "%(name)s %(levelname)s %(asctime)s at %(lineno)s: %(message)s",
     datefmt="%H:%M:%S"
 )
 
@@ -73,14 +74,19 @@ def get_subfolders_name(source_media_full_path: list[str]) -> list[str]:
 
 
 def get_sorted_path(path: str) -> list:
-    """Get the absolute paths of all files from the given path, then sort the
-    absolute paths, and finally return a list of sorted absolute paths.
+    """
+    Get the absolute path of all files from the given path, then sort the abs
+    paths, finally return a list of sorted absolute paths.
 
-    Args:
-        path: The input path. The abs paths of all files in its subdirectories
-            will be sorted.
+    Parameters
+    ----------
+    path
+        The input path. The abs paths of all files in its subdirectories will be
+        sorted.
 
-    Returns:
+    Returns
+    -------
+    list
         A list containing all abs paths that have been sorted.
 
     """
@@ -193,10 +199,13 @@ class Proxy(Resolve):
                     self.media_pool.ImportMedia(abs_media_path)
 
     def get_resolution(self) -> list[str]:
-        """Get all clips resolution, return a list consist of all resolution
+        """
+        Get all clip's resolution, return a list consist all all resolution
         string.
 
-        Returns:
+        Returns
+        -------
+        list
             A list containing all the resolution information.
 
         """
@@ -215,17 +224,24 @@ class Proxy(Resolve):
     def create_and_change_timeline(
         self, timeline_name: str, width: int, height: int
     ) -> bool:
-        """Simply create empty timeline and change its resolution to inputs
+        """
+        Simply create empty timeline and change its resolution to inputs
         width and height. Used for `create_new_timeline()` function.
 
-        Args:
-            timeline_name: The name of the timeline that will be created.
-            width: The width of the timeline that will be created.
-            height: The height of the timeline that will be created.
+        Parameters
+        ----------
+        timeline_name
+            The name of the timeline that will be created.
+        width
+            The width of the timeline that will be created.
+        height
+            The height of the timeline that will be created.
 
-        Returns:
-            bool: If `SetSetting()` is all right, it will return True, otherwise
-                it will be False.
+        Returns
+        -------
+        bool
+            If `SetSetting()` is all right, it will return True, otherwise it
+            will be False.
 
         """
         self.media_pool.CreateEmptyTimeline(timeline_name)
@@ -238,16 +254,22 @@ class Proxy(Resolve):
     def create_new_timeline(
         self, timeline_name: str, width: int, height: int
     ) -> bool:
-        """Create new timeline in the _Timeline bin (the last folder under root
+        """
+        Create new timeline in the _Timeline bin (the last folder under root
         folder). Check timeline duplication.
 
-        Args:
-            timeline_name: The name of the timeline that will be created.
-            width: The width of the timeline that will be created.
-            height: The height of the timeline what will be created.
+        Parameters
+        ----------
+        timeline_name
+            The name of the timeline that will be created.
+        width
+            The width of the timeline that will be created.
+        height
+            The height of the timeline that will be created.
 
-        Returns:
-            bool
+        Returns
+        -------
+        bool
 
         """
         self.media_pool.SetCurrentFolder(
@@ -295,19 +317,33 @@ class Proxy(Resolve):
                             self.media_pool.AppendToTimeline(clip)
 
     def add_render_job(self):
-        """Select a render preset, set the render path, add to render queue."""
-        preset_list = self.project.GetRenderPresetList()
-        if len(preset_list) < 32:
-            print("Please pour in the H.265 render preset first.")
-        elif len(preset_list) > 33:
-            print(
-                "There are too many custom render presets, please specify it.")
-        else:
-            # 加载 H.265 渲染预设.
-            proxy_preset = preset_list[-1]
-            self.project.LoadRenderPreset(proxy_preset)
+        """
+        Select a render preset, set the render path, add to render queue.
 
-            # 把时间线分别添加到渲染队列
+        Notes
+        -----
+        - DaVinci Resolve Render Preset path
+            - Windows: ``%USERNAME%\\AppData\\Roaming\\Blackmagic Design\\DaVinci Resolve\\Support\\Resolve Disk Database\\Resolve Projects\\Settings``
+            - Mac OS: ``/Users/{user_name}/Library/Application Support/Blackmagic Design/DaVinci Resolve/Resolve Disk Database/Resolve Projects/Settings``
+
+        """
+
+        # Load H.265 preset.
+        for preset in self.project.GetRenderPresetList():
+            if re.search(r".*(Proxy).*(H\.265).*", preset):
+                self.project.LoadRenderPreset(preset)
+                log.info("Successfully loaded H.265 render preset")
+                break
+            else:
+                continue
+
+        # If there is no valid preset, it will not pass the following checks.
+        # The following operations will not be performed.
+        if any(
+            re.search(r".*(Proxy).*(H\.265).*", preset)
+            for preset in self.project.GetRenderPresetList()
+        ):
+            # Add all timelines to the render queue
             for timeline in self.get_all_timeline():
                 self.project.SetCurrentTimeline(timeline)
                 try:
@@ -315,16 +351,25 @@ class Proxy(Resolve):
                 except FileExistsError:
                     pass
                 rendering_setting = {
-                    "TargetDir": f"{self.proxy_parent_path}/{timeline.GetName()}"
+                    "TargetDir": f"{self.proxy_parent_path}/{timeline.GetName()}",
+                    "ColorSpaceTag": "Same as Project",
+                    "GammaTag": "Same as Project",
                 }
                 self.project.SetRenderSettings(rendering_setting)
                 self.project.AddRenderJob()
+        else:
+            log.debug("No valid render preset, program is terminated.")
 
     def set_project_color_management(self):
-        """Set the project color management to DaVinci YRGB and timeline color
+        """
+        Set the project color management to DaVinci YRGB and timeline color
         space to Rec.709 Gamma 2.4.
 
-        Notes:
+        Returns
+        -------
+
+        Notes
+        -----
             `SetSetting()` will fail as long as the Output Color Space is
         changed in the first place, not "Same as Timeline". This is
         acceptable, because the default Output Color Space for newly created
@@ -333,23 +378,23 @@ class Proxy(Resolve):
         project's default Output Color Space is not "Same as Timeline",
         there needs to be a mechanism to handle this.  # TODO
 
+        # TODO: 说一下为什么不设置 Rec.709-A 了
 
-        # TODO 说一下为什么不设置 Rec.709-A 了
         """
         if self.project.SetSetting("colorScienceMode", "davinciYRGB"):
             timeline_color_space = self.project.GetSetting('colorSpaceTimeline')
             output_colorspace = self.project.GetSetting('colorSpaceOutput')
-            log.info("Set Project Color Management to DaVinci YRGB")
-            log.info(f"Timeline Color Space is {timeline_color_space}")
-            log.info(f"Output Color Space is {output_colorspace}")
+            log.info("Set Project Color Management to 'DaVinci YRGB'")
+            log.info(f"Timeline Color Space is '{timeline_color_space}'")
+            log.info(f"Output Color Space is '{output_colorspace}'")
             log.info("----------------")
 
         if self.project.SetSetting("colorSpaceTimeline", "Rec.709 Gamma 2.4"):
             timeline_color_space = self.project.GetSetting('colorSpaceTimeline')
             output_colorspace = self.project.GetSetting('colorSpaceOutput')
-            log.info("Set Timeline Color Space to Rec.709 Gamma 2.4")
-            log.info(f"Timeline Color Space is {timeline_color_space}")
-            log.info(f"Output Color Space is {output_colorspace}")
+            log.info("Set Timeline Color Space to 'Rec.709 Gamma 2.4'")
+            log.info(f"Timeline Color Space is '{timeline_color_space}'")
+            log.info(f"Output Color Space is '{output_colorspace}'")
             log.info("----------------")
 
         if self.project.SetSetting("colorSpaceOutput", "Same as Timeline"):

@@ -20,7 +20,7 @@ ch.setLevel(logging.DEBUG)
 
 # Create formatter
 formatter = logging.Formatter(
-    "%(levelname)s - %(asctime)s - %(name)s at %(lineno)s: %(message)s",
+    "%(name)s %(levelname)s %(asctime)s at %(lineno)s: %(message)s",
     datefmt="%H:%M:%S"
 )
 
@@ -111,7 +111,7 @@ class QC(Resolve):
         """
         self.media_pool.CreateEmptyTimeline(timeline_name)
         current_timeline = self.project.GetCurrentTimeline()
-        # TODO Needs a mechanism to track SetSetting() status
+        # TODO: Needs a mechanism to track SetSetting() status
         current_timeline.SetSetting("useCustomSettings", "1")
         current_timeline.SetSetting("timelineResolutionWidth", str(width))
         current_timeline.SetSetting("timelineResolutionHeight", str(height))
