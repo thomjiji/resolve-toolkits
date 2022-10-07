@@ -55,8 +55,8 @@ def absolute_file_paths(path: str) -> list:
 
 def get_subfolders_name(source_media_full_path: list[str]) -> list[str]:
     """
-    Extract sub-folder name from media storage full path. For creating sub-
-    folder in the media pool.
+    Extract sub-folder name from media storage full path. For creating
+    sub-folder in the media pool.
 
     Parameters
     ----------
@@ -128,7 +128,7 @@ class Proxy(Resolve):
             self.media_parent_path
         )
 
-    def create_bin(self, subfolders_list: list):
+    def create_bin(self, subfolders_list: list[str]):
         """Create sub-folder in the media pool root folder."""
         for i in subfolders_list:
             self.media_pool.AddSubFolder(self.root_folder, i)
@@ -137,16 +137,23 @@ class Proxy(Resolve):
             return self.media_pool.AddSubFolder(self.root_folder, "_Timeline")
 
     def import_clip(self, one_by_one=False) -> None:
-        """Import footage from media storage into the corresponding subfolder of
+        """
+        Import footage from media storage into the corresponding subfolder of
         the media pool root folder.
 
-        Filter out the files with suffix in the INVALID_EXTENSION list before
-        importing. If one_by_one parameter is specified as True, then it will
+        Fiter out the files with suffix in the INVALID_EXTENSION list before
+        importing. If one_by_one parameter is specified as True, then they will
         be imported one by one, which is relatively slow.
 
-        Args:
-            one_by_one: If this parameter is specified as True, it will be
-                imported one by one, which is relatively slow.
+        Parameters
+        ----------
+        one_by_one
+            If this parameter is specified a True, it will be imported one by
+            one, which is relatively slow.
+
+
+        Returns
+        -------
 
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
