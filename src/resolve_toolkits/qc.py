@@ -45,14 +45,19 @@ def absolute_file_paths(path: str) -> list:
 
 def get_subfolders_name(path: list[str]) -> list[str]:
     """
-    Extract sub-folder name from media storage full path.
-    For creating sub-folder in the media pool.
+    Extract sub-folder name from media storage full path. For creating
+    sub-folder in the media pool.
 
-    args:
-        path: the next directory level of current media storage path lists.
+    Parameters
+    ----------
+    path
+        The next directory level of current media storage path lists.
 
-    return:
-        List: containing subfolders name.
+    Returns
+    -------
+    list
+        Containing subfolders name.
+
     """
     return [os.path.split(i)[1] for i in path]
 
