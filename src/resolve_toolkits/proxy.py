@@ -30,13 +30,17 @@ log.addHandler(ch)
 
 
 def absolute_file_paths(path: str) -> list:
-    """Walk through the path, add the absolute paths of all files under the
-    path to a list, and finally return the list.
+    """Walk through the path, add the abs paths of all files under the path to
+    a list, and finally return the list.
 
-    Args:
-        path: the input media path for parse files under it.
+    Parameters
+    ----------
+    path
+        The input media path for parsing files under it.
 
-    Returns:
+    Returns
+    -------
+    list
         A list containing all the abs path (str) of files under input path.
 
     """
@@ -50,14 +54,19 @@ def absolute_file_paths(path: str) -> list:
 
 
 def get_subfolders_name(source_media_full_path: list[str]) -> list[str]:
-    """Extract sub-folder name from media storage full path.
-    For creating sub-folder in the media pool.
+    """
+    Extract sub-folder name from media storage full path. For creating sub-
+    folder in the media pool.
 
-    Args:
-        source_media_full_path: source media full path list.
+    Parameters
+    ----------
+    source_media_full_path
+        Source media full path list.
 
-    Returns:
-        A list containing the names of the folders under the given path.
+    Returns
+    -------
+    list
+        A list containing the name of the folders under the given path.
 
     """
     return [os.path.split(i)[1] for i in source_media_full_path]
@@ -89,21 +98,27 @@ def get_sorted_path(path: str) -> list:
 
 
 class Proxy(Resolve):
-    """Proxy class
+    """
+    Proxy class
 
-    Attributes:
-        media_parent_path:
-        proxy_parent_path:
-        media_fullpath_list:
+    Attributes
+    ----------
+    media_parent_path
+    proxy_parent_path
+    media_fullpath_list
 
     """
 
     def __init__(self, input_path: str, output_path: str = None):
-        """Initialize some necessary objects.
+        """
+        Initialize some necessary objects.
 
-        Args:
-            input_path: the media path.
-            output_path: the proxy path.
+        Parameters
+        ----------
+        input_path
+            The media path.
+        output_path
+            The proxy path.
 
         """
         super().__init__()
