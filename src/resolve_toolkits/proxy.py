@@ -5,12 +5,14 @@ import os
 import re
 import sys
 import logging
+from pathlib import Path
+
 from resolve import Resolve
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 
 # Set up logger
-log = logging.getLogger("proxy_logger")
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 # Create console handler and set level to debug

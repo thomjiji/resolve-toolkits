@@ -11,7 +11,7 @@ from resolve import Resolve
 DROP_FRAME_FPS = [23.98, 29.97, 59.94, 119.88]
 
 # Set up logger
-log = logging.getLogger("qc_logger")
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 # Create console handler and set level to debug
