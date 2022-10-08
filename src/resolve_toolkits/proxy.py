@@ -440,7 +440,9 @@ if __name__ == "__main__":
     p = Proxy(media_parent_path, proxy_parent_path)
     p.set_project_color_management()
 
-    # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。导入素材到对应的 bin。
+    # After the bin name is obtained from the media storage,
+    # the corresponding bin can be identified and created in the media pool.
+    # Import the material to the corresponding bin.
     subfolders_name = get_subfolders_name(p.media_fullpath_list)
     p.create_bin(subfolders_name)
     p.import_clip()
@@ -459,10 +461,11 @@ if __name__ == "__main__":
             timeline_height = int(int(res.split("x")[1]) / 2)
             p.create_new_timeline(res, timeline_width, timeline_height)
 
-    # 导入素材到对应时间线
+    # Import footage to corresponding timeline
     p.append_to_timeline()
 
-    # 将所有时间线以 H.265 的渲染预设添加到渲染队列
+    # Apply H.265 render preset to all timelines and add them to the render
+    # queue sequentially.
     p.add_render_job()
 
     # Before starting rendering, pause the program, confirm to the user if
