@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import logging
+from typing import Iterable, AnyStr
 from resolve import Resolve
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
@@ -54,7 +55,7 @@ def absolute_file_paths(path: str) -> list:
     return absolute_file_path_list
 
 
-def get_subfolders_name(source_media_full_path: list[str]) -> list[str]:
+def get_subfolders_name(source_media_full_path: list[str]) -> Iterable[AnyStr]:
     """
     Extract sub-folder name from media storage full path. For creating
     sub-folder in the media pool.
@@ -111,7 +112,6 @@ class Proxy(Resolve):
     ----------
     media_parent_path
     proxy_parent_path
-    media_fullpath_list
 
     """
 
@@ -134,7 +134,7 @@ class Proxy(Resolve):
         #     self.media_parent_path
         # )
 
-    def create_bin(self, subfolders_list: list[str]):
+    def create_bin(self, subfolders_list: Iterable[AnyStr]) -> None:
         """Create sub-folder in the media pool root folder."""
         for i in subfolders_list:
             self.media_pool.AddSubFolder(self.root_folder, i)
