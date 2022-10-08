@@ -92,6 +92,7 @@ class QC(Resolve):
         Parameters
         ----------
         input_path
+            The path of the source clips.
 
         """
         super().__init__()

@@ -5,8 +5,6 @@ import os
 import re
 import sys
 import logging
-from pathlib import Path
-
 from resolve import Resolve
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
@@ -132,9 +130,9 @@ class Proxy(Resolve):
         super().__init__()
         self.media_parent_path = input_path
         self.proxy_parent_path = output_path
-        self.media_fullpath_list = self.media_storage.GetSubFolderList(
-            self.media_parent_path
-        )
+        # self.media_fullpath_list = self.media_storage.GetSubFolderList(
+        #     self.media_parent_path
+        # )
 
     def create_bin(self, subfolders_list: list[str]):
         """Create sub-folder in the media pool root folder."""
@@ -167,7 +165,9 @@ class Proxy(Resolve):
         media_parent_dir = os.path.basename(self.media_parent_path)
 
         if not one_by_one:
-            for cam_path in self.media_fullpath_list:
+            for cam_path in self.media_storage.GetSubFolderList(
+                self.media_parent_path
+            ):
                 filename_and_fullpath_value = get_sorted_path(cam_path)
                 if sys.platform.startswith("win") or sys.platform.startswith(
                     "cygwin"):
@@ -405,63 +405,69 @@ class Proxy(Resolve):
             log.debug("Failed to set Output Color Space to 'Same as Timeline'")
 
 
-if __name__ == "__main__":
-
-    # Get commandline arguments
+def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Proxy is a commandline tool to automatic import clips, "
                     "create timelines, add to render queue using the predefined"
                     " preset quickly and easily."
     )
-    parser.add_argument("input", help="Input path of media.", action="store",
-                        type=str)
+    parser.add_argument(
+        "input",
+        help="Input path of media.",
+        action="store",
+        type=str)
     parser.add_argument(
         "output",
         help="Output path of proxy rendering.", action="store",
         type=str
     )
-    args = parser.parse_args()
 
-    # show help if no args
+    return parser
+
+
+def main():
+    parser = create_parser()
+
+    # Show help message if no arguments are provided.
     if len(sys.argv) == 1:
         parser.print_help()
 
-    media_parent_path = args.input
-    if not os.path.exists(args.output):
-        log.debug(
-            f"'{args.output}' doesn't exist, please ensure this directory "
-            f"exists.\n "
-        )
+    # Ensure that the output path exists.
+    media_parent_path = parser.parse_args().input
+    if not os.path.exists(parser.parse_args().output):
+        log.debug(f"{parser.parse_args().output} does not exist, program is "
+                  f"terminated.")
         parser.print_help()
         sys.exit()
     else:
-        proxy_parent_path = args.output
+        proxy_parent_path = parser.parse_args().output
 
+    # Initialize the proxy object.
     p = Proxy(media_parent_path, proxy_parent_path)
-    p.set_project_color_management()
 
-    # After the bin name is obtained from the media storage,
-    # the corresponding bin can be identified and created in the media pool.
-    # Import the material to the corresponding bin.
-    subfolders_name = get_subfolders_name(p.media_fullpath_list)
-    p.create_bin(subfolders_name)
+    p.set_project_color_management()
+    # Create bin in the media pool.
+    media_fullpath_list = p.media_storage.GetSubFolderList(media_parent_path)
+    p.create_bin(get_subfolders_name(media_fullpath_list))
+
+    # Import clips to the corresponding bin in media pool.
     p.import_clip()
 
-    # 根据媒体池所有的素材分辨率新建不同的时间线。
+    # Create new timeline based on the resolution of all the clips in the
+    # media pool.
     for res in p.get_resolution():
         if "x" not in res:
             continue
         if int(res.split("x")[1]) <= 1080:
-            timeline_width = res.split("x")[0]
-            timeline_height = res.split("x")[1]
-            p.create_new_timeline(res, int(timeline_width),
-                                  int(timeline_height))
+            timeline_width: int = int(res.split("x")[0])
+            timeline_height: int = int(res.split("x")[1])
+            p.create_new_timeline(res, timeline_width, timeline_height)
         else:
-            timeline_width = int(int(res.split("x")[0]) / 2)
-            timeline_height = int(int(res.split("x")[1]) / 2)
+            timeline_width: int = int(int(res.split("x")[0]) / 2)
+            timeline_height: int = int(int(res.split("x")[1]) / 2)
             p.create_new_timeline(res, timeline_width, timeline_height)
 
-    # Import footage to corresponding timeline
+    # Import footage to timeline
     p.append_to_timeline()
 
     # Apply H.265 render preset to all timelines and add them to the render
@@ -476,6 +482,10 @@ if __name__ == "__main__":
         "'y' to start rendering. Enter 'n' to exit the program. y/n?"
     ) == "y":
         p.project.StartRendering(isInteractiveMode=True)
+
+
+if __name__ == "__main__":
+    main()
 
     # for render_job in project.GetRenderJobList():
     #     pprint(render_job)
