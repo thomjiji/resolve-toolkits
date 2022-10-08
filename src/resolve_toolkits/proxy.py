@@ -149,7 +149,7 @@ class Proxy(Resolve):
         Import footage from media storage into the corresponding subfolder of
         the media pool root folder.
 
-        Fiter out the files with suffix in the INVALID_EXTENSION list before
+        Filter out the files with suffix in the INVALID_EXTENSION list before
         importing. If one_by_one parameter is specified as True, then they will
         be imported one by one, which is relatively slow.
 
@@ -416,7 +416,8 @@ if __name__ == "__main__":
     parser.add_argument("input", help="Input path of media.", action="store",
                         type=str)
     parser.add_argument(
-        "output", help="Output path of proxy rendering.", action="store",
+        "output",
+        help="Output path of proxy rendering.", action="store",
         type=str
     )
     args = parser.parse_args()

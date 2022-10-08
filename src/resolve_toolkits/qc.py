@@ -63,6 +63,21 @@ def get_subfolders_name(path: list[str]) -> list[str]:
 
 
 def is_camera_dir(text: str) -> bool:
+    """
+    Is the given text a cam dir? Yes or no based on GSJ camera name
+    specification. For example: FX6#1, FX3#2...
+
+    Parameters
+    ----------
+    text
+        Text to be checked.
+
+    Returns
+    -------
+    bool
+        Yes or no
+
+    """
     matched = re.search(r"^.+#\d$", text)
     if matched:
         return True
@@ -74,8 +89,10 @@ class QC(Resolve):
     def __init__(self, input_path: str):
         """
 
-        Args:
-            input_path:
+        Parameters
+        ----------
+        input_path
+
         """
         super().__init__()
         self.media_parent_path = input_path
@@ -99,19 +116,27 @@ class QC(Resolve):
         height: int,
         fps: Union[int, float]
     ) -> bool:
-        """Simply create empty timeline and change its resolution to inputs
+        """
+        Simply create empty timeline and change its resolution to inputs
         width and height, and its frame rate to input fps. Used for
         `create_new_timeline()` function.
 
-        Args:
-            timeline_name: The name of the timeline that will be created.
-            width: The width of the timeline that will be created.
-            height: The height of the timeline that will be created.
-            fps: The frame rate of the timeline that will be created.
+        Parameters
+        ----------
+        timeline_name
+            The name of the timeline that will be created.
+        width
+            The width of the timeline that will be created.
+        height
+            The height of the timeline that will be created.
+        fps
+            The frame rate of the timeline that will be created.
 
-        Returns:
-            bool: If `SetSetting()` is all right, it will return True, otherwise
-                it will be False.
+        Returns
+        -------
+        bool
+            If `SetSetting()` is all right, it will return True, otherwise it
+            will be False.
 
         """
         self.media_pool.CreateEmptyTimeline(timeline_name)
@@ -123,9 +148,9 @@ class QC(Resolve):
         return current_timeline.SetSetting("timelineFrameRate", str(fps))
 
     def create_timeline_qc(self):
-        """In the _Timeline bin under each bin of the media pool, create a new
-        timeline based on the resolution and frame rate of the clip under that
-        bin.
+        """In the _Timeline bin under each camera bin of the media pool, create
+        a new timeline based on the resolution and frame rate of the clips under
+        that bin.
         """
         for subfolder in self.root_folder.GetSubFolderList():
             for folder in subfolder.GetSubFolderList():
@@ -150,15 +175,20 @@ class QC(Resolve):
                         )
 
     def get_bin_res_and_fps(self, bin_name: str) -> dict[str, float]:
-        """Get the resolution and frame rate of all clips under the given bin,
+        """
+        Get the resolution and frame rate of all clips under the given bin,
         return a dict.
 
-        Args:
-            bin_name: The existing camera bin in the media pool.
+        Parameters
+        ----------
+        bin_name
+            The existing camera bin in the media pool.
 
-        Returns:
-            A dict containing the resolution and frame rate of all shots under
-            the camera bin in the media pool, used by `create_timeline_qc()`.
+        Returns
+        -------
+        dict
+            Containing the resolution and frame rate of all shots under the
+            camera bin in the media pool, used by `create_timeline_qc()`.
 
         """
         current_bin = self.get_subfolder_by_name(bin_name)
@@ -177,7 +207,7 @@ class QC(Resolve):
                 self.media_pool.AddSubFolder(self.get_subfolder_by_name(i),
                                              "Timeline")
 
-    def append_to_timeline(self) -> None:
+    def append_to_timeline(self):
         for subfolder in self.root_folder.GetSubFolderList():
             self.media_pool.SetCurrentFolder(subfolder)
             for clip in subfolder.GetClipList():
