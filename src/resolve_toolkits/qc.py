@@ -7,6 +7,7 @@ import os
 import logging
 from proxy import Proxy
 from resolve import Resolve
+from pybmd import folder as bmd_folder
 
 DROP_FRAME_FPS = [23.98, 29.97, 59.94, 119.88]
 
@@ -195,7 +196,7 @@ class QC(Resolve):
         current_bin = self.get_subfolder_by_name(bin_name)
         bin_res_fps_dict = {
             clip.GetClipProperty("Resolution"): clip.GetClipProperty("FPS")
-            for clip in current_bin.GetClipList()
+            for clip in current_bin.GetClipList()  # type: ignore
         }
 
         return bin_res_fps_dict

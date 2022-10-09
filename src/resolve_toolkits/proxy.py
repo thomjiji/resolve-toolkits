@@ -21,7 +21,7 @@ ch.setLevel(logging.DEBUG)
 # Create formatter
 formatter = logging.Formatter(
     "%(name)s %(levelname)s %(asctime)s at %(lineno)s: %(message)s",
-    datefmt="%H:%M:%S"
+    datefmt="%H:%M:%S",
 )
 
 # Add formatter to ch
@@ -55,7 +55,7 @@ def absolute_file_paths(path: str) -> list:
     return absolute_file_path_list
 
 
-def get_subfolders_name(source_media_full_path: list[str]) -> Iterable[AnyStr]:
+def get_subfolders_name(source_media_full_path: list[str]) -> list[str]:
     """
     Extract sub-folder name from media storage full path. For creating
     sub-folder in the media pool.
@@ -115,7 +115,7 @@ class Proxy(Resolve):
 
     """
 
-    def __init__(self, input_path: str, output_path: str = None):
+    def __init__(self, input_path: str, output_path: str = ""):
         """
         Initialize some necessary objects.
 
@@ -170,10 +170,11 @@ class Proxy(Resolve):
             ):
                 filename_and_fullpath_value = get_sorted_path(cam_path)
                 if sys.platform.startswith("win") or sys.platform.startswith(
-                    "cygwin"):
+                    "cygwin"
+                ):
                     name = cam_path.split("\\")[
                         cam_path.split("\\").index(media_parent_dir) + 1
-                        ]
+                    ]
                     current_folder = self.get_subfolder_by_name(name)
                 else:
                     current_folder = self.get_subfolder_by_name(
@@ -182,20 +183,23 @@ class Proxy(Resolve):
 
                 self.media_pool.SetCurrentFolder(current_folder)
                 self.media_storage.AddItemListToMediaPool(
-                    filename_and_fullpath_value)
+                    filename_and_fullpath_value
+                )
         else:
             for abs_media_path in get_sorted_path(self.media_parent_path):
                 if sys.platform.startswith("win") or sys.platform.startswith(
-                    "cygwin"):
+                    "cygwin"
+                ):
                     name = abs_media_path.split("\\")[
                         abs_media_path.split("\\").index(media_parent_dir) + 1
-                        ]
+                    ]
                     current_folder = self.get_subfolder_by_name(name)
                     self.media_pool.SetCurrentFolder(current_folder)
                     self.media_pool.ImportMedia(abs_media_path)
                 else:
-                    name = abs_media_path.split('/')[
-                        abs_media_path.split('/').index(media_parent_dir) + 1]
+                    name = abs_media_path.split("/")[
+                        abs_media_path.split("/").index(media_parent_dir) + 1
+                    ]
                     current_folder = self.get_subfolder_by_name(name)
                     self.media_pool.SetCurrentFolder(current_folder)
                     self.media_pool.ImportMedia(abs_media_path)
@@ -285,22 +289,23 @@ class Proxy(Resolve):
         existing_timeline_resolution = []
         for existing_timeline in self.get_all_timeline():
             existing_timeline_resolution.append(
-                f"{existing_timeline.GetSetting('timelineResolutionWidth')}"
-                f"x{existing_timeline.GetSetting('timelineResolutionHeight')}"
+                f"{existing_timeline.GetSetting('timelineResolutionWidth')}"  # type: ignore
+                f"x{existing_timeline.GetSetting('timelineResolutionHeight')}"  # type: ignore
             )
         if f"{str(width)}x{str(height)}" not in existing_timeline_resolution:
-            return self.create_and_change_timeline(
-                timeline_name, width, height
-            )
+            return self.create_and_change_timeline(timeline_name, width, height)
         else:
             current_timeline = self.project.GetCurrentTimeline()
-            new_name = f"{current_timeline.GetName()}_{str(width)}x{str(height)}"
+            new_name = (
+                f"{current_timeline.GetName()}_{str(width)}x{str(height)}"
+            )
             return current_timeline.SetName(new_name)
 
     def append_to_timeline(self) -> None:
         """Append to timeline"""
-        all_timeline_name = [timeline.GetName() for timeline in
-                             self.get_all_timeline()]
+        all_timeline_name = [
+            timeline.GetName() for timeline in self.get_all_timeline()  # type: ignore
+        ]
         for subfolder in self.root_folder.GetSubFolderList():
             for clip in subfolder.GetClipList():
                 if (
@@ -308,9 +313,11 @@ class Proxy(Resolve):
                     or clip.GetClipProperty("type") == "Video + Audio"
                 ):
                     clip_width = clip.GetClipProperty("Resolution").split("x")[
-                        0]
+                        0
+                    ]
                     clip_height = clip.GetClipProperty("Resolution").split("x")[
-                        1]
+                        1
+                    ]
                     for name in all_timeline_name:
                         if f"{clip_width}x{clip_height}" in name:
                             self.project.SetCurrentTimeline(
@@ -349,11 +356,11 @@ class Proxy(Resolve):
             for timeline in self.get_all_timeline():
                 self.project.SetCurrentTimeline(timeline)
                 try:
-                    os.mkdir(f"{self.proxy_parent_path}/{timeline.GetName()}")
+                    os.mkdir(f"{self.proxy_parent_path}/{timeline.GetName()}")  # type: ignore
                 except FileExistsError:
                     pass
                 rendering_setting = {
-                    "TargetDir": f"{self.proxy_parent_path}/{timeline.GetName()}",
+                    "TargetDir": f"{self.proxy_parent_path}/{timeline.GetName()}",  # type: ignore
                     "ColorSpaceTag": "Same as Project",
                     "GammaTag": "Same as Project",
                 }
@@ -384,16 +391,16 @@ class Proxy(Resolve):
 
         """
         if self.project.SetSetting("colorScienceMode", "davinciYRGB"):
-            timeline_color_space = self.project.GetSetting('colorSpaceTimeline')
-            output_colorspace = self.project.GetSetting('colorSpaceOutput')
+            timeline_color_space = self.project.GetSetting("colorSpaceTimeline")
+            output_colorspace = self.project.GetSetting("colorSpaceOutput")
             log.info("Set Project Color Management to 'DaVinci YRGB'")
             log.info(f"Timeline Color Space is '{timeline_color_space}'")
             log.info(f"Output Color Space is '{output_colorspace}'")
             log.info("----------------")
 
         if self.project.SetSetting("colorSpaceTimeline", "Rec.709 Gamma 2.4"):
-            timeline_color_space = self.project.GetSetting('colorSpaceTimeline')
-            output_colorspace = self.project.GetSetting('colorSpaceOutput')
+            timeline_color_space = self.project.GetSetting("colorSpaceTimeline")
+            output_colorspace = self.project.GetSetting("colorSpaceOutput")
             log.info("Set Timeline Color Space to 'Rec.709 Gamma 2.4'")
             log.info(f"Timeline Color Space is '{timeline_color_space}'")
             log.info(f"Output Color Space is '{output_colorspace}'")
@@ -408,18 +415,17 @@ class Proxy(Resolve):
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Proxy is a commandline tool to automatic import clips, "
-                    "create timelines, add to render queue using the predefined"
-                    " preset quickly and easily."
+        "create timelines, add to render queue using the predefined"
+        " preset quickly and easily."
     )
     parser.add_argument(
-        "input",
-        help="Input path of media.",
-        action="store",
-        type=str)
+        "input", help="Input path of media.", action="store", type=str
+    )
     parser.add_argument(
         "output",
-        help="Output path of proxy rendering.", action="store",
-        type=str
+        help="Output path of proxy rendering.",
+        action="store",
+        type=str,
     )
 
     return parser
@@ -435,8 +441,10 @@ def main():
     # Ensure that the output path exists.
     media_parent_path = parser.parse_args().input
     if not os.path.exists(parser.parse_args().output):
-        log.debug(f"{parser.parse_args().output} does not exist, program is "
-                  f"terminated.")
+        log.debug(
+            f"{parser.parse_args().output} does not exist, program is "
+            f"terminated."
+        )
         parser.print_help()
         sys.exit()
     else:
@@ -477,10 +485,13 @@ def main():
     # Before starting rendering, pause the program, confirm to the user if
     # Burn-in has been added, and give the user time to confirm that other
     # parameters are correct. Then start rendering.
-    if input(
-        "The program is paused, please add burn-in manually, then enter "
-        "'y' to start rendering. Enter 'n' to exit the program. y/n?"
-    ) == "y":
+    if (
+        input(
+            "The program is paused, please add burn-in manually, then enter "
+            "'y' to start rendering. Enter 'n' to exit the program. y/n?"
+        )
+        == "y"
+    ):
         p.project.StartRendering(isInteractiveMode=True)
 
 
