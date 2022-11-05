@@ -89,7 +89,6 @@ def is_camera_dir(text: str) -> bool:
 class QC(Resolve):
     def __init__(self, input_path: str):
         """
-
         Parameters
         ----------
         input_path
@@ -99,9 +98,6 @@ class QC(Resolve):
         super().__init__()
         self.media_parent_path = input_path
         self.proxy = Proxy(self.media_parent_path)
-        self.media_fullpath_list = self.media_storage.GetSubFolderList(
-            self.media_parent_path
-        )
         self.camera_log_dict = {
             "S-Gamut3.Cine/S-Log3": ["A7S3", "FX3", "FX6", "FX9", "FS7", "Z90"],
             "Panasonic V-Gamut/V-Log": ["GH5", "GH5M2", "S1H", "GH5S", "S5"],
@@ -204,11 +200,21 @@ class QC(Resolve):
 
         return bin_res_fps_dict
 
-    def create_bin(self, subfolders_list: list):
-        """Create Timeline bin under each camera bin in the media pool."""
-        for i in subfolders_list:
-            self.media_pool.AddSubFolder(self.root_folder, i)
+    def create_bin(self, subfolders_name_list: list):
+        """
+        Create camera bin in media pool, create Timeline bin in each camera bin.
+
+        Parameters
+        ----------
+        subfolders_list
+            The name of subfolders to be created in media pool.
+
+        """
+        for i in subfolders_name_list:
+            current_folder = self.media_pool.AddSubFolder(self.root_folder, i)
+            self.media_pool.SetCurrentFolder(current_folder)
             if is_camera_dir(i):
+                self.media_pool.AddSubFolder(current_folder, "Footage")
                 self.media_pool.AddSubFolder(
                     self.get_subfolder_by_name(i), "Timeline"
                 )
@@ -317,17 +323,20 @@ def main():
 
     # 从 media storage 得到 bin 名称之后，以此在 media pool 分辨新建对应的 bin。
     # 导入素材到对应的 bin
-    subfolders_name = get_subfolders_name(qc.media_fullpath_list)
+    subfolders_name = get_subfolders_name(
+        qc.media_storage.GetSubFolderList(media_parent_path)
+    )
     qc.create_bin(subfolders_name)
-    qc.proxy.import_clip(one_by_one=True)
+    # qc.proxy.import_clip(one_by_one=True)
 
-    # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
-    qc.create_timeline_qc()
+    # # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
+    # qc.create_timeline_qc()
 
-    # 导入素材到对应时间线
-    qc.append_to_timeline()
+    # # 导入素材到对应时间线
+    # qc.append_to_timeline()
 
-    qc.set_project_color_management()
+    # qc.set_project_color_management()
+
 
 if __name__ == "__main__":
     main()

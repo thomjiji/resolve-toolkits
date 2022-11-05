@@ -157,10 +157,6 @@ class Proxy(Resolve):
             If this parameter is specified a True, it will be imported one by
             one, which is relatively slow.
 
-
-        Returns
-        -------
-
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
 
