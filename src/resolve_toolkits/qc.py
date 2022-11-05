@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import re
 import sys
 from typing import Union
@@ -7,7 +8,6 @@ import os
 import logging
 from proxy import Proxy
 from resolve import Resolve
-from pybmd import folder as bmd_folder
 
 DROP_FRAME_FPS = [23.98, 29.97, 59.94, 119.88]
 
@@ -22,7 +22,7 @@ ch.setLevel(logging.DEBUG)
 # Create formatter
 formatter = logging.Formatter(
     "%(name)s %(levelname)s %(asctime)s at %(lineno)s: %(message)s",
-    datefmt="%H:%M:%S"
+    datefmt="%H:%M:%S",
 )
 
 # Add formatter to ch
@@ -116,7 +116,7 @@ class QC(Resolve):
         timeline_name: str,
         width: int,
         height: int,
-        fps: Union[int, float]
+        fps: Union[int, float],
     ) -> bool:
         """
         Simply create empty timeline and change its resolution to inputs
@@ -150,7 +150,8 @@ class QC(Resolve):
         return current_timeline.SetSetting("timelineFrameRate", str(fps))
 
     def create_timeline_qc(self):
-        """In the _Timeline bin under each camera bin of the media pool, create
+        """
+        In the Timeline bin under each camera bin of the media pool, create
         a new timeline based on the resolution and frame rate of the clips under
         that bin.
         """
@@ -168,7 +169,9 @@ class QC(Resolve):
                             fps,
                         )
                     else:
-                        timeline_name = f"{subfolder.GetName()}_{res}_{int(fps)}p"
+                        timeline_name = (
+                            f"{subfolder.GetName()}_{res}_{int(fps)}p"
+                        )
                         self.create_and_change_timeline(
                             timeline_name,
                             int(res.split("x")[0]),
@@ -202,12 +205,13 @@ class QC(Resolve):
         return bin_res_fps_dict
 
     def create_bin(self, subfolders_list: list):
-        """Create _Timeline bin under each camera bin in the media pool."""
+        """Create Timeline bin under each camera bin in the media pool."""
         for i in subfolders_list:
             self.media_pool.AddSubFolder(self.root_folder, i)
             if is_camera_dir(i):
-                self.media_pool.AddSubFolder(self.get_subfolder_by_name(i),
-                                             "Timeline")
+                self.media_pool.AddSubFolder(
+                    self.get_subfolder_by_name(i), "Timeline"
+                )
 
     def append_to_timeline(self):
         for subfolder in self.root_folder.GetSubFolderList():
@@ -220,23 +224,23 @@ class QC(Resolve):
                     res = clip.GetClipProperty("Resolution")
                     fps = clip.GetClipProperty("FPS")
                     if fps in DROP_FRAME_FPS:
-                        current_timeline_name = f"{subfolder.GetName()}_" \
-                                                f"{res}_{fps}p"
+                        current_timeline_name = (
+                            f"{subfolder.GetName()}_{res}_{fps}p"
+                        )
                         current_timeline = self.get_timeline_by_name(
                             current_timeline_name
                         )
                     else:
-                        current_timeline_name = f"{subfolder.GetName()}_" \
-                                                f"{res}_{int(fps)}p"
+                        current_timeline_name = (
+                            f"{subfolder.GetName()}_{res}_{int(fps)}p"
+                        )
                         current_timeline = self.get_timeline_by_name(
                             current_timeline_name
                         )
 
                     if not self.project.SetCurrentTimeline(current_timeline):
                         log.debug(
-                            f"append_to_timeline() "
-                            f"project.SetCurrentTimeline() failed. Current "
-                            f"timeline is {current_timeline}"
+                            f"append_to_timeline() project.SetCurrentTimeline() failed. Current timeline is {current_timeline}"
                         )
                     self.media_pool.AppendToTimeline(clip)
                     self.set_clip_colorspace(clip)
@@ -259,13 +263,17 @@ class QC(Resolve):
         if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
             cam_name = clip_path.split("\\")[
                 clip_path.split("\\").index(
-                    os.path.basename(self.media_parent_path)) + 1
-                ].split("#")[0]
+                    os.path.basename(self.media_parent_path)
+                )
+                + 1
+            ].split("#")[0]
         else:
             cam_name = clip_path.split("/")[
                 clip_path.split("/").index(
-                    os.path.basename(self.media_parent_path)) + 1
-                ].split("#")[0]
+                    os.path.basename(self.media_parent_path)
+                )
+                + 1
+            ].split("#")[0]
         camera_log_key = list(self.camera_log_dict.keys())
         camera_log_val = list(self.camera_log_dict.values())
         try:
@@ -282,16 +290,28 @@ class QC(Resolve):
             )
 
 
-if __name__ == "__main__":
-    # 检查用户是否提供了正确的 argv。
-    if len(sys.argv) < 2:
-        log.debug(
-            "\n- Usage: python3 qc.py [media path]. \n- Please ensure this "
-            "directory exist. "
-        )
-        sys.exit()
-    else:
-        media_parent_path: str = sys.argv[1]
+def create_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="qc is a commandline tool to automate media import, "
+        "Bin, Timeline creation and color management setting in DaVinci "
+        "Resolve.",
+    )
+    parser.add_argument(
+        "path",
+        help="Source media absolute path",
+        action="store",
+        type=str,
+    )
+
+    return parser
+
+
+def main():
+    parser = create_parser()
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
+    media_parent_path = parser.parse_args().path
 
     qc = QC(media_parent_path)
 
@@ -308,3 +328,6 @@ if __name__ == "__main__":
     qc.append_to_timeline()
 
     qc.set_project_color_management()
+
+if __name__ == "__main__":
+    main()
