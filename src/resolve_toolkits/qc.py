@@ -218,6 +218,14 @@ class QC(Resolve):
                 )
 
     def append_to_timeline(self):
+        """
+        For each clip in camera bin, after doing some checks, we get the name of
+        the timeline that the clip should be appended to by their properties,
+        then `SetCurrentTimeline()` to it and finally append the clip to this
+        timeline. Set clip input colorspace (see `set_clip_colorspace()`) and so
+        on.
+
+        """
         for subfolder in self.root_folder.GetSubFolderList():
             self.media_pool.SetCurrentFolder(subfolder)
             for clip in subfolder.GetClipList():
@@ -250,6 +258,18 @@ class QC(Resolve):
                     self.set_clip_colorspace(clip)
 
     def set_project_color_management(self):
+        """
+        Notes
+        -----
+        DaVinici Resolve has no so much API for ACES, so we use DaVinci YRGB
+        Color Managed instead.
+
+        -   `isAutoColorManage`: 0. Set to False ("0").
+        -   `useCATransform`: Use white point adaptation. Set to True ("1").
+        -   `useColorSpaeAwareGradingTools`: Use color space aware grading 
+            tools. Set to True ("1").
+
+        """
         self.project.SetSetting("colorScienceMode", "davinciYRGBColorManagedv2")
         self.project.SetSetting("isAutoColorManage", "0")
         self.project.SetSetting("colorSpaceTimeline", "DaVinci WG/Intermediate")
@@ -263,6 +283,10 @@ class QC(Resolve):
         self.project.SetSetting("useColorSpaceAwareGradingTools", "1")
 
     def set_clip_colorspace(self, clip):
+
+        # By looking at which folder this clip comes from, we can compare it
+        # with the `camera_log_dict` in QC attribute to get its color space
+        # information.
         clip_path = clip.GetClipProperty("File Path")
         if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
             cam_name = clip_path.split("\\")[
