@@ -211,10 +211,8 @@ class QC(Resolve):
 
         """
         for i in subfolders_name_list:
-            current_folder = self.media_pool.AddSubFolder(self.root_folder, i)
-            self.media_pool.SetCurrentFolder(current_folder)
+            self.media_pool.AddSubFolder(self.root_folder, i)
             if is_camera_dir(i):
-                self.media_pool.AddSubFolder(current_folder, "Footage")
                 self.media_pool.AddSubFolder(
                     self.get_subfolder_by_name(i), "Timeline"
                 )
@@ -327,15 +325,15 @@ def main():
         qc.media_storage.GetSubFolderList(media_parent_path)
     )
     qc.create_bin(subfolders_name)
-    # qc.proxy.import_clip(one_by_one=True)
+    qc.proxy.import_clip(one_by_one=True)
 
-    # # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
-    # qc.create_timeline_qc()
+    # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
+    qc.create_timeline_qc()
 
-    # # 导入素材到对应时间线
-    # qc.append_to_timeline()
+    # 导入素材到对应时间线
+    qc.append_to_timeline()
 
-    # qc.set_project_color_management()
+    qc.set_project_color_management()
 
 
 if __name__ == "__main__":
