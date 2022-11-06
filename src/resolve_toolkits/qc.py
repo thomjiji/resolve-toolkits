@@ -205,16 +205,23 @@ class QC(Resolve):
 
         Parameters
         ----------
-        subfolders_list
+        subfolders_name_list
             The name of subfolders to be created in media pool.
 
         """
-        for i in subfolders_name_list:
-            self.media_pool.AddSubFolder(self.root_folder, i)
-            if is_camera_dir(i):
+        current_selected_bin = self.media_pool.GetCurrentFolder()
+
+        for subfolder_name in subfolders_name_list:
+            if not self.get_subfolder_by_name_recursively(subfolder_name):
                 self.media_pool.AddSubFolder(
-                    self.get_subfolder_by_name(i), "Timeline"
+                    current_selected_bin, subfolder_name
                 )
+
+        self.media_pool.SetCurrentFolder(current_selected_bin)
+
+        for subfolder in self.media_pool.GetCurrentFolder().GetSubFolderList():
+            self.media_pool.AddSubFolder(subfolder, "Footage")
+            self.media_pool.AddSubFolder(subfolder, "Timeline")
 
     def append_to_timeline(self):
         """
@@ -251,7 +258,8 @@ class QC(Resolve):
 
                     if not self.project.SetCurrentTimeline(current_timeline):
                         log.debug(
-                            f"append_to_timeline() project.SetCurrentTimeline() failed. Current timeline is {current_timeline}"
+                            f"append_to_timeline() project.SetCurrentTimeline()"
+                            f" failed. Current timeline is {current_timeline}."
                         )
                     self.media_pool.AppendToTimeline(clip)
                     self.set_clip_colorspace(clip)
@@ -265,7 +273,7 @@ class QC(Resolve):
 
         -   `isAutoColorManage`: 0. Set to False ("0").
         -   `useCATransform`: Use white point adaptation. Set to True ("1").
-        -   `useColorSpaeAwareGradingTools`: Use color space aware grading 
+        -   `useColorSpaeAwareGradingTools`: Use color space aware grading
             tools. Set to True ("1").
 
         """
@@ -348,15 +356,15 @@ def main():
         qc.media_storage.GetSubFolderList(media_parent_path)
     )
     qc.create_bin(subfolders_name)
-    qc.proxy.import_clip(one_by_one=True)
+    # qc.proxy.import_clip(one_by_one=True)
 
-    # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
-    qc.create_timeline_qc()
+    # # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
+    # qc.create_timeline_qc()
 
-    # 导入素材到对应时间线
-    qc.append_to_timeline()
+    # # 导入素材到对应时间线
+    # qc.append_to_timeline()
 
-    qc.set_project_color_management()
+    # qc.set_project_color_management()
 
 
 if __name__ == "__main__":
