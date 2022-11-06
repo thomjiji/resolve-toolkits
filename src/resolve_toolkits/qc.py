@@ -3,7 +3,6 @@
 import argparse
 import re
 import sys
-from typing import Union
 import os
 import logging
 from proxy import Proxy
@@ -112,7 +111,7 @@ class QC(Resolve):
         timeline_name: str,
         width: int,
         height: int,
-        fps: Union[int, float],
+        fps: int | float,
     ) -> bool:
         """
         Simply create empty timeline and change its resolution to inputs
