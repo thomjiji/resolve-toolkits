@@ -212,16 +212,15 @@ class QC(Resolve):
         current_selected_bin = self.media_pool.GetCurrentFolder()
 
         for subfolder_name in subfolders_name_list:
-            if not self.get_subfolder_by_name_recursively(subfolder_name):
+            if not subfolder_name in [
+                subfolder.GetName()
+                for subfolder in current_selected_bin.GetSubFolderList()
+            ]:
                 self.media_pool.AddSubFolder(
                     current_selected_bin, subfolder_name
                 )
 
         self.media_pool.SetCurrentFolder(current_selected_bin)
-
-        for subfolder in self.media_pool.GetCurrentFolder().GetSubFolderList():
-            self.media_pool.AddSubFolder(subfolder, "Footage")
-            self.media_pool.AddSubFolder(subfolder, "Timeline")
 
     def append_to_timeline(self):
         """
@@ -355,6 +354,7 @@ def main():
     subfolders_name = get_subfolders_name(
         qc.media_storage.GetSubFolderList(media_parent_path)
     )
+    log.info(f"subfolders to be created:\n{subfolders_name}")
     qc.create_bin(subfolders_name)
     # qc.proxy.import_clip(one_by_one=True)
 
