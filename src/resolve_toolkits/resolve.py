@@ -1,5 +1,6 @@
-from resolve_init import GetResolve
-from type import Folder, Timeline
+from src.resolve_toolkits.resolve_init import GetResolve
+from src.resolve_toolkits.type import Folder
+from src.resolve_toolkits.type import Timeline
 
 
 class Resolve:

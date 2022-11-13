@@ -5,8 +5,9 @@ import re
 import sys
 import os
 import logging
-from proxy import Proxy
-from resolve import Resolve
+from src.resolve_toolkits.proxy import Proxy
+from src.resolve_toolkits.proxy import get_sorted_path
+from src.resolve_toolkits.resolve import Resolve
 
 DROP_FRAME_FPS = [23.98, 29.97, 59.94, 119.88]
 
@@ -83,6 +84,22 @@ def is_camera_dir(text: str) -> bool:
         return True
     else:
         return False
+
+
+def create_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="qc is a commandline tool to automate media import, "
+        "Bin, Timeline creation and color management setting in DaVinci "
+        "Resolve.",
+    )
+    parser.add_argument(
+        "path",
+        help="Source media absolute path",
+        action="store",
+        type=str,
+    )
+
+    return parser
 
 
 class QC(Resolve):
@@ -323,21 +340,65 @@ class QC(Resolve):
                 f"succeed. "
             )
 
+    def import_clip(self) -> None:
+        """
+        Import footage from media storage into the corresponding subfolder of
+        the media pool root folder.
 
-def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="qc is a commandline tool to automate media import, "
-        "Bin, Timeline creation and color management setting in DaVinci "
-        "Resolve.",
-    )
-    parser.add_argument(
-        "path",
-        help="Source media absolute path",
-        action="store",
-        type=str,
-    )
+        Filter out the files with suffix in the INVALID_EXTENSION list before
+        importing. If one_by_one parameter is specified as True, then they will
+        be imported one by one, which is relatively slow.
 
-    return parser
+        Parameters
+        ----------
+        one_by_one
+            If this parameter is specified a True, it will be imported one by
+            one, which is relatively slow.
+
+        """
+        media_parent_dir = os.path.basename(self.media_parent_path)
+        current_folder = self.media_pool.GetCurrentFolder()
+
+        for cam_path in self.media_storage.GetSubFolderList(
+            self.media_parent_path
+        ):
+            filename_and_fullpath_value = get_sorted_path(cam_path)
+            if sys.platform.startswith("win") or sys.platform.startswith(
+                "cygwin"
+            ):
+                name = cam_path.split("\\")[
+                    cam_path.split("\\").index(media_parent_dir) + 1
+                ]
+                current_folder = self.get_subfolder_by_name(name)
+            else:
+                bin_name = cam_path.split("/")[
+                    cam_path.split("/").index(media_parent_dir) + 1
+                ]
+            self.media_pool.SetCurrentFolder(bin_name)
+            self.media_storage.AddItemListToMediaPool(
+                filename_and_fullpath_value
+            )
+            self.media_pool.SetCurrentFolder(current_folder)
+
+    def import_clip_one_by_one(self):
+        media_parent_dir = os.path.basename(self.media_parent_path)
+        for abs_media_path in get_sorted_path(self.media_parent_path):
+            if sys.platform.startswith("win") or sys.platform.startswith(
+                "cygwin"
+            ):
+                name = abs_media_path.split("\\")[
+                    abs_media_path.split("\\").index(media_parent_dir) + 1
+                ]
+                current_folder = self.get_subfolder_by_name(name)
+                self.media_pool.SetCurrentFolder(current_folder)
+                self.media_pool.ImportMedia(abs_media_path)
+            else:
+                name = abs_media_path.split("/")[
+                    abs_media_path.split("/").index(media_parent_dir) + 1
+                ]
+                current_folder = self.get_subfolder_by_name_recursively(name)
+                self.media_pool.SetCurrentFolder(current_folder)
+            self.media_pool.ImportMedia(abs_media_path)
 
 
 def main():
@@ -356,7 +417,7 @@ def main():
     )
     log.info(f"subfolders to be created:\n{subfolders_name}")
     qc.create_bin(subfolders_name)
-    # qc.proxy.import_clip(one_by_one=True)
+    qc.proxy.import_clip(one_by_one=True)
 
     # # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
     # qc.create_timeline_qc()

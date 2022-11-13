@@ -5,8 +5,10 @@ import os
 import re
 import sys
 import logging
-from typing import Iterable, AnyStr
-from resolve import Resolve
+from typing import Iterable
+from typing import AnyStr
+
+from src.resolve_toolkits.resolve import Resolve
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 
@@ -32,8 +34,9 @@ log.addHandler(ch)
 
 
 def absolute_file_paths(path: str) -> list:
-    """Walk through the path, add the abs paths of all files under the path to
-    a list, and finally return the list.
+    """
+    Walk through the path, add the abs paths of all files under the given path
+    to a list, and return that list.
 
     Parameters
     ----------
@@ -196,9 +199,11 @@ class Proxy(Resolve):
                     name = abs_media_path.split("/")[
                         abs_media_path.split("/").index(media_parent_dir) + 1
                     ]
-                    current_folder = self.get_subfolder_by_name(name)
+                    current_folder = self.get_subfolder_by_name_recursively(
+                        name
+                    )
                     self.media_pool.SetCurrentFolder(current_folder)
-                    self.media_pool.ImportMedia(abs_media_path)
+                self.media_pool.ImportMedia(abs_media_path)
 
     def get_resolution(self) -> list[str]:
         """
