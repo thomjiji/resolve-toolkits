@@ -69,6 +69,8 @@ class Resolve:
         Traverse the media pool recursively, return a dictionary containing all
         the subfolders (Folder object) and their names.
 
+        Recursion starts from the currently selected folder by default.
+
         Parameters
         ----------
         recursion_begins_at_root:

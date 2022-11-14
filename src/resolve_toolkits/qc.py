@@ -33,7 +33,15 @@ log.addHandler(ch)
 
 
 def absolute_file_paths(path: str) -> list:
-    """Get the absolute paths of all files under a given path."""
+    """
+    Get the absolute paths of all files under a given path.
+
+    Parameters
+    ----------
+    path
+        The path to be walked through.
+
+    """
     absolute_file_path_list = []
     for directory_path, _, filenames in os.walk(path):
         for filename in filenames:
@@ -417,7 +425,7 @@ def main():
     )
     log.info(f"subfolders to be created:\n{subfolders_name}")
     qc.create_bin(subfolders_name)
-    qc.proxy.import_clip(one_by_one=True)
+    # qc.proxy.import_clip(one_by_one=True)
 
     # # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
     # qc.create_timeline_qc()
