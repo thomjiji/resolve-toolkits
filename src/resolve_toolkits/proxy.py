@@ -80,8 +80,9 @@ def get_subfolders_name(source_media_full_path: list[str]) -> list[str]:
 def get_sorted_path(path: str) -> list:
     """
     Get the absolute path of all files from the given path, then sort the abs
-    paths, finally return a list of sorted absolute paths.
-
+    paths, finally return a list of sorted absolute paths. Filter out the files 
+    with suffix in the INVALID_EXTENSION.
+    
     Parameters
     ----------
     path

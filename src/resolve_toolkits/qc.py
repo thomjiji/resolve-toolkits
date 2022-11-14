@@ -350,22 +350,12 @@ class QC(Resolve):
 
     def import_clip(self) -> None:
         """
-        Import footage from media storage into the corresponding subfolder of
-        the media pool root folder.
-
-        Filter out the files with suffix in the INVALID_EXTENSION list before
-        importing. If one_by_one parameter is specified as True, then they will
-        be imported one by one, which is relatively slow.
-
-        Parameters
-        ----------
-        one_by_one
-            If this parameter is specified a True, it will be imported one by
-            one, which is relatively slow.
+        Import footage from media storage into the currently selected folder's
+        cam bin.
 
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
-        current_folder = self.media_pool.GetCurrentFolder()
+        current_parent_folder = self.media_pool.GetCurrentFolder()
 
         for cam_path in self.media_storage.GetSubFolderList(
             self.media_parent_path
@@ -374,22 +364,34 @@ class QC(Resolve):
             if sys.platform.startswith("win") or sys.platform.startswith(
                 "cygwin"
             ):
-                name = cam_path.split("\\")[
+                bin_name = cam_path.split("\\")[
                     cam_path.split("\\").index(media_parent_dir) + 1
                 ]
-                current_folder = self.get_subfolder_by_name(name)
+                current_folder = self.get_subfolder_by_name_recursively(
+                    bin_name
+                )
             else:
                 bin_name = cam_path.split("/")[
                     cam_path.split("/").index(media_parent_dir) + 1
                 ]
-            self.media_pool.SetCurrentFolder(bin_name)
+                current_folder = self.get_subfolder_by_name_recursively(
+                    bin_name
+                )
+            self.media_pool.SetCurrentFolder(current_folder)
             self.media_storage.AddItemListToMediaPool(
                 filename_and_fullpath_value
             )
-            self.media_pool.SetCurrentFolder(current_folder)
+            self.media_pool.SetCurrentFolder(current_parent_folder)
 
     def import_clip_one_by_one(self):
+        """
+        Not working as expected so far: `SetCurrentFolder()` to parent too 
+        frequently. Don't use it.
+        
+        """
         media_parent_dir = os.path.basename(self.media_parent_path)
+        current_parent_folder = self.media_pool.GetCurrentFolder()
+
         for abs_media_path in get_sorted_path(self.media_parent_path):
             if sys.platform.startswith("win") or sys.platform.startswith(
                 "cygwin"
@@ -397,16 +399,18 @@ class QC(Resolve):
                 name = abs_media_path.split("\\")[
                     abs_media_path.split("\\").index(media_parent_dir) + 1
                 ]
-                current_folder = self.get_subfolder_by_name(name)
+                current_folder = self.get_subfolder_by_name_recursively(name)
                 self.media_pool.SetCurrentFolder(current_folder)
                 self.media_pool.ImportMedia(abs_media_path)
+                self.media_pool.SetCurrentFolder(current_parent_folder)
             else:
                 name = abs_media_path.split("/")[
                     abs_media_path.split("/").index(media_parent_dir) + 1
                 ]
                 current_folder = self.get_subfolder_by_name_recursively(name)
                 self.media_pool.SetCurrentFolder(current_folder)
-            self.media_pool.ImportMedia(abs_media_path)
+                self.media_pool.ImportMedia(abs_media_path)
+                self.media_pool.SetCurrentFolder(current_parent_folder)
 
 
 def main():
@@ -425,7 +429,7 @@ def main():
     )
     log.info(f"subfolders to be created:\n{subfolders_name}")
     qc.create_bin(subfolders_name)
-    # qc.proxy.import_clip(one_by_one=True)
+    qc.import_clip()
 
     # # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
     # qc.create_timeline_qc()
