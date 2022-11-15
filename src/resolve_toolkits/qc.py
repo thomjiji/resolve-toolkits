@@ -174,25 +174,32 @@ class QC(Resolve):
         In the Timeline bin under each camera bin of the media pool, create
         a new timeline based on the resolution and frame rate of the clips under
         that bin.
+
         """
+        parent_bin = self.media_pool.GetCurrentFolder()
+        
         for subfolder in self.media_pool.GetCurrentFolder().GetSubFolderList():
             log.debug(f"Current subfolder: {subfolder.GetName()}")
-            self.media_pool.SetCurrentFolder(
-                self.get_subfolder_by_name_recursively("Timeline")
-            )
             res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
             for res, fps in res_fps_dict.items():
                 if fps in DROP_FRAME_FPS:
                     timeline_name = f"{subfolder.GetName()}_{res}_{fps}p"
+                    self.media_pool.SetCurrentFolder(
+                        self.get_subfolder_by_name_recursively("Timeline")
+                    )
                     self.create_and_change_timeline(
                         timeline_name,
                         int(res.split("x")[0]),
                         int(res.split("x")[1]),
                         fps,
                     )
+                    self.media_pool.SetCurrentFolder(parent_bin)
                 else:
                     timeline_name = (
                         f"{subfolder.GetName()}_{res}_{int(fps)}p"
+                    )
+                    self.media_pool.SetCurrentFolder(
+                        self.get_subfolder_by_name_recursively("Timeline")
                     )
                     self.create_and_change_timeline(
                         timeline_name,
@@ -200,6 +207,7 @@ class QC(Resolve):
                         int(res.split("x")[1]),
                         int(fps),
                     )
+                    self.media_pool.SetCurrentFolder(parent_bin)
 
     def get_bin_res_and_fps(self, bin_name: str) -> dict[str, float]:
         """
