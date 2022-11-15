@@ -118,10 +118,10 @@ class Resolve:
 
         Parameters
         ----------
-        subfolder_name:
+        subfolder_name
             The name of the subfolder you want to find and get the corresponding
             Folder object of it.
-        recursion_begins_at_root:
+        recursion_begins_at_root
             If True, the recursion will begin at the root folder. If False, the
             recursion will begin at the current selected folder in the media
             pool.

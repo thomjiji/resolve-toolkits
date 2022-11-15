@@ -175,29 +175,31 @@ class QC(Resolve):
         a new timeline based on the resolution and frame rate of the clips under
         that bin.
         """
-        for subfolder in self.root_folder.GetSubFolderList():
-            for folder in subfolder.GetSubFolderList():
-                self.media_pool.SetCurrentFolder(folder)
-                res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
-                for res, fps in res_fps_dict.items():
-                    if fps in DROP_FRAME_FPS:
-                        timeline_name = f"{subfolder.GetName()}_{res}_{fps}p"
-                        self.create_and_change_timeline(
-                            timeline_name,
-                            int(res.split("x")[0]),
-                            int(res.split("x")[1]),
-                            fps,
-                        )
-                    else:
-                        timeline_name = (
-                            f"{subfolder.GetName()}_{res}_{int(fps)}p"
-                        )
-                        self.create_and_change_timeline(
-                            timeline_name,
-                            int(res.split("x")[0]),
-                            int(res.split("x")[1]),
-                            int(fps),
-                        )
+        for subfolder in self.media_pool.GetCurrentFolder().GetSubFolderList():
+            log.debug(f"Current subfolder: {subfolder.GetName()}")
+            self.media_pool.SetCurrentFolder(
+                self.get_subfolder_by_name_recursively("Timeline")
+            )
+            res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
+            for res, fps in res_fps_dict.items():
+                if fps in DROP_FRAME_FPS:
+                    timeline_name = f"{subfolder.GetName()}_{res}_{fps}p"
+                    self.create_and_change_timeline(
+                        timeline_name,
+                        int(res.split("x")[0]),
+                        int(res.split("x")[1]),
+                        fps,
+                    )
+                else:
+                    timeline_name = (
+                        f"{subfolder.GetName()}_{res}_{int(fps)}p"
+                    )
+                    self.create_and_change_timeline(
+                        timeline_name,
+                        int(res.split("x")[0]),
+                        int(res.split("x")[1]),
+                        int(fps),
+                    )
 
     def get_bin_res_and_fps(self, bin_name: str) -> dict[str, float]:
         """
@@ -216,7 +218,7 @@ class QC(Resolve):
             camera bin in the media pool, used by `create_timeline_qc()`.
 
         """
-        current_bin = self.get_subfolder_by_name(bin_name)
+        current_bin = self.get_subfolder_by_name_recursively(bin_name)
         bin_res_fps_dict = {
             clip.GetClipProperty("Resolution"): clip.GetClipProperty("FPS")
             for clip in current_bin.GetClipList()  # type: ignore
@@ -226,7 +228,7 @@ class QC(Resolve):
 
     def create_bin(self, subfolders_name_list: list):
         """
-        Create camera bin in media pool, create Timeline bin in each camera bin.
+        Create camera bin in current select bin.
 
         Parameters
         ----------
@@ -237,6 +239,8 @@ class QC(Resolve):
         current_selected_bin = self.media_pool.GetCurrentFolder()
 
         for subfolder_name in subfolders_name_list:
+            # If the bin to be created does not yet exist, create it, otherwise
+            # skip it to avoid duplication.
             if not subfolder_name in [
                 subfolder.GetName()
                 for subfolder in current_selected_bin.GetSubFolderList()
@@ -245,6 +249,7 @@ class QC(Resolve):
                     current_selected_bin, subfolder_name
                 )
 
+        self.media_pool.AddSubFolder(current_selected_bin, "Timeline")
         self.media_pool.SetCurrentFolder(current_selected_bin)
 
     def append_to_timeline(self):
@@ -385,9 +390,9 @@ class QC(Resolve):
 
     def import_clip_one_by_one(self):
         """
-        Not working as expected so far: `SetCurrentFolder()` to parent too 
+        Not working as expected so far: `SetCurrentFolder()` to parent too
         frequently. Don't use it.
-        
+
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
         current_parent_folder = self.media_pool.GetCurrentFolder()
@@ -431,8 +436,8 @@ def main():
     qc.create_bin(subfolders_name)
     qc.import_clip()
 
-    # # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
-    # qc.create_timeline_qc()
+    # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
+    qc.create_timeline_qc()
 
     # # 导入素材到对应时间线
     # qc.append_to_timeline()
