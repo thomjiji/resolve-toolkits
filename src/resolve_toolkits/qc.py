@@ -161,12 +161,22 @@ class QC(Resolve):
             will be False.
 
         """
-        self.media_pool.CreateEmptyTimeline(timeline_name)
-        current_timeline = self.project.GetCurrentTimeline()
-        current_timeline.SetSetting("useCustomSettings", "1")
-        current_timeline.SetSetting("timelineResolutionWidth", str(width))
-        current_timeline.SetSetting("timelineResolutionHeight", str(height))
-        return current_timeline.SetSetting("timelineFrameRate", str(fps))
+        if isinstance(fps, float):
+            self.media_pool.CreateEmptyTimeline(timeline_name)
+            current_timeline = self.project.GetCurrentTimeline()
+            current_timeline.SetSetting("useCustomSettings", "1")
+            current_timeline.SetSetting("timelineResolutionWidth", str(width))
+            current_timeline.SetSetting("timelineResolutionHeight", str(height))
+            return current_timeline.SetSetting(
+                "timelineFrameRate", str(int(fps))
+            )
+        else:
+            self.media_pool.CreateEmptyTimeline(timeline_name)
+            current_timeline = self.project.GetCurrentTimeline()
+            current_timeline.SetSetting("useCustomSettings", "1")
+            current_timeline.SetSetting("timelineResolutionWidth", str(width))
+            current_timeline.SetSetting("timelineResolutionHeight", str(height))
+            return current_timeline.SetSetting("timelineFrameRate", str(fps))
 
     def create_timeline_qc(self):
         """
