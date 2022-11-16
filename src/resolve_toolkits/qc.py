@@ -229,8 +229,7 @@ class QC(Resolve):
         bin_res_fps_dict = {
             clip.GetClipProperty("Resolution"): clip.GetClipProperty("FPS")
             for clip in current_bin.GetClipList()  # type: ignore
-            if clip.GetClipProperty("type") == "video"
-            or clip.GetClipProperty("type") == "Video + Audio"
+            if clip.GetClipProperty("type") != "Audio"
         }
 
         return bin_res_fps_dict
