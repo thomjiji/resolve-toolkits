@@ -163,7 +163,6 @@ class QC(Resolve):
         """
         self.media_pool.CreateEmptyTimeline(timeline_name)
         current_timeline = self.project.GetCurrentTimeline()
-        # TODO: Needs a mechanism to track SetSetting() status
         current_timeline.SetSetting("useCustomSettings", "1")
         current_timeline.SetSetting("timelineResolutionWidth", str(width))
         current_timeline.SetSetting("timelineResolutionHeight", str(height))
@@ -177,11 +176,13 @@ class QC(Resolve):
 
         """
         parent_bin = self.media_pool.GetCurrentFolder()
-        
+
         for subfolder in self.media_pool.GetCurrentFolder().GetSubFolderList():
-            log.debug(f"Current subfolder: {subfolder.GetName()}")
+            if subfolder.GetName() == "Timeline":
+                continue
             res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
             for res, fps in res_fps_dict.items():
+                log.debug(fps)
                 if fps in DROP_FRAME_FPS:
                     timeline_name = f"{subfolder.GetName()}_{res}_{fps}p"
                     self.media_pool.SetCurrentFolder(
@@ -195,9 +196,7 @@ class QC(Resolve):
                     )
                     self.media_pool.SetCurrentFolder(parent_bin)
                 else:
-                    timeline_name = (
-                        f"{subfolder.GetName()}_{res}_{int(fps)}p"
-                    )
+                    timeline_name = f"{subfolder.GetName()}_{res}_{int(fps)}p"
                     self.media_pool.SetCurrentFolder(
                         self.get_subfolder_by_name_recursively("Timeline")
                     )
@@ -230,6 +229,8 @@ class QC(Resolve):
         bin_res_fps_dict = {
             clip.GetClipProperty("Resolution"): clip.GetClipProperty("FPS")
             for clip in current_bin.GetClipList()  # type: ignore
+            if clip.GetClipProperty("type") == "video"
+            or clip.GetClipProperty("type") == "Video + Audio"
         }
 
         return bin_res_fps_dict
