@@ -266,7 +266,11 @@ class QC(Resolve):
                     current_selected_bin, subfolder_name
                 )
 
-        self.media_pool.AddSubFolder(current_selected_bin, "Timeline")
+        if not "Timeline" in [
+            subfolder.GetName()
+            for subfolder in current_selected_bin.GetSubFolderList()
+        ]:
+            self.media_pool.AddSubFolder(current_selected_bin, "Timeline")
         self.media_pool.SetCurrentFolder(current_selected_bin)
 
     def append_to_timeline(self):
