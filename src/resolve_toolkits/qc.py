@@ -291,19 +291,24 @@ class QC(Resolve):
                     res = clip.GetClipProperty("Resolution")
                     fps = clip.GetClipProperty("FPS")
                     if fps in DROP_FRAME_FPS:
-                        current_timeline_name = (
-                            f"{current_folder.GetName()}_{subfolder.GetName()}_{res}_{fps}p"
-                        )
+                        current_timeline_name = f"{current_folder.GetName()}_{subfolder.GetName()}_{res}_{fps}p"
                         current_timeline = self.get_timeline_by_name(
                             current_timeline_name
                         )
                     else:
-                        current_timeline_name = (
-                            f"{current_folder.GetName()}_{subfolder.GetName()}_{res}_{int(fps)}p"
-                        )
+                        current_timeline_name = f"{current_folder.GetName()}_{subfolder.GetName()}_{res}_{int(fps)}p"
                         current_timeline = self.get_timeline_by_name(
                             current_timeline_name
                         )
+
+                    clips_currently_on_timeline: list[str] = [
+                        timeline_clip.GetName()
+                        for timeline_clip in current_timeline.GetItemListInTrack(
+                            "video", 1
+                        )
+                    ]
+                    if clip.GetName() in clips_currently_on_timeline:
+                        continue
 
                     if not self.project.SetCurrentTimeline(current_timeline):
                         log.debug(
