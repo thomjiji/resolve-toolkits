@@ -192,9 +192,8 @@ class QC(Resolve):
                 continue
             res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
             for res, fps in res_fps_dict.items():
-                log.debug(fps)
                 if fps in DROP_FRAME_FPS:
-                    timeline_name = f"{subfolder.GetName()}_{res}_{fps}p"
+                    timeline_name = f"{parent_bin.GetName()}_{subfolder.GetName()}_{res}_{fps}p"
                     self.media_pool.SetCurrentFolder(
                         self.get_subfolder_by_name_recursively("Timeline")
                     )
@@ -206,7 +205,7 @@ class QC(Resolve):
                     )
                     self.media_pool.SetCurrentFolder(parent_bin)
                 else:
-                    timeline_name = f"{subfolder.GetName()}_{res}_{int(fps)}p"
+                    timeline_name = f"{parent_bin.GetName()}_{subfolder.GetName()}_{res}_{int(fps)}p"
                     self.media_pool.SetCurrentFolder(
                         self.get_subfolder_by_name_recursively("Timeline")
                     )
@@ -280,8 +279,6 @@ class QC(Resolve):
 
         """
         current_folder = self.media_pool.GetCurrentFolder()
-        # timeline_bin = self.get_subfolder_by_name_recursively("Timeline")
-        # self.media_pool.SetCurrentFolder(timeline_bin)
 
         for subfolder in current_folder.GetSubFolderList():
             if subfolder.GetName() == "Timeline":
@@ -295,14 +292,14 @@ class QC(Resolve):
                     fps = clip.GetClipProperty("FPS")
                     if fps in DROP_FRAME_FPS:
                         current_timeline_name = (
-                            f"{subfolder.GetName()}_{res}_{fps}p"
+                            f"{current_folder.GetName()}_{subfolder.GetName()}_{res}_{fps}p"
                         )
                         current_timeline = self.get_timeline_by_name(
                             current_timeline_name
                         )
                     else:
                         current_timeline_name = (
-                            f"{subfolder.GetName()}_{res}_{int(fps)}p"
+                            f"{current_folder.GetName()}_{subfolder.GetName()}_{res}_{int(fps)}p"
                         )
                         current_timeline = self.get_timeline_by_name(
                             current_timeline_name
@@ -455,7 +452,6 @@ def main():
     subfolders_name = get_subfolders_name(
         qc.media_storage.GetSubFolderList(media_parent_path)
     )
-    log.info(f"subfolders to be created:\n{subfolders_name}")
     qc.create_bin(subfolders_name)
     qc.import_clip()
 
@@ -465,7 +461,7 @@ def main():
     # 导入素材到对应时间线
     qc.append_to_timeline()
 
-    # qc.set_project_color_management()
+    qc.set_project_color_management()
 
 
 if __name__ == "__main__":
