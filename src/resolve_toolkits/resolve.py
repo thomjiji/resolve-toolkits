@@ -46,9 +46,9 @@ class Resolve:
 
     def get_timeline_by_name(self, timeline_name: str) -> str | Timeline:
         """Get timeline object by name."""
-        all_timeline: list[Timeline] = self.get_all_timeline()
+        all_timeline = self.get_all_timeline()
         timeline_dict = {
-            timeline.GetName(): timeline for timeline in all_timeline  # type: ignore
+            timeline.GetName(): timeline for timeline in all_timeline
         }
         return timeline_dict.get(timeline_name, "")
 

@@ -279,8 +279,13 @@ class QC(Resolve):
         on.
 
         """
-        for subfolder in self.root_folder.GetSubFolderList():
-            self.media_pool.SetCurrentFolder(subfolder)
+        current_folder = self.media_pool.GetCurrentFolder()
+        # timeline_bin = self.get_subfolder_by_name_recursively("Timeline")
+        # self.media_pool.SetCurrentFolder(timeline_bin)
+
+        for subfolder in current_folder.GetSubFolderList():
+            if subfolder.GetName() == "Timeline":
+                continue
             for clip in subfolder.GetClipList():
                 if (
                     clip.GetClipProperty("type") == "Video"
@@ -457,8 +462,8 @@ def main():
     # 创建基于 media pool 下各 camera bin 里素材的分辨率帧率的时间线
     qc.create_timeline_qc()
 
-    # # 导入素材到对应时间线
-    # qc.append_to_timeline()
+    # 导入素材到对应时间线
+    qc.append_to_timeline()
 
     # qc.set_project_color_management()
 
