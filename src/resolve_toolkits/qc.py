@@ -137,7 +137,7 @@ class QC(Resolve):
         width: int,
         height: int,
         fps: int | float,
-    ) -> bool:
+    ) -> None:
         """
         Simply create empty timeline and change its resolution to inputs
         width and height, and its frame rate to input fps. Used for
@@ -161,22 +161,20 @@ class QC(Resolve):
             will be False.
 
         """
-        if isinstance(fps, float):
-            self.media_pool.CreateEmptyTimeline(timeline_name)
+        if isinstance(fps, float) and self.media_pool.CreateEmptyTimeline(
+            timeline_name
+        ):
             current_timeline = self.project.GetCurrentTimeline()
             current_timeline.SetSetting("useCustomSettings", "1")
             current_timeline.SetSetting("timelineResolutionWidth", str(width))
             current_timeline.SetSetting("timelineResolutionHeight", str(height))
-            return current_timeline.SetSetting(
-                "timelineFrameRate", str(int(fps))
-            )
-        else:
-            self.media_pool.CreateEmptyTimeline(timeline_name)
+            current_timeline.SetSetting("timelineFrameRate", str(int(fps)))
+        elif self.media_pool.CreateEmptyTimeline(timeline_name):
             current_timeline = self.project.GetCurrentTimeline()
             current_timeline.SetSetting("useCustomSettings", "1")
             current_timeline.SetSetting("timelineResolutionWidth", str(width))
             current_timeline.SetSetting("timelineResolutionHeight", str(height))
-            return current_timeline.SetSetting("timelineFrameRate", str(fps))
+            current_timeline.SetSetting("timelineFrameRate", str(fps))
 
     def create_timeline_qc(self):
         """
