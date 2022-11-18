@@ -133,12 +133,20 @@ class QC(Resolve):
 
     def create_bin(self, subfolders_name_list: list):
         """
-        Create camera bin in current select bin.
+        Create new folders for each camera under the currently selected folder.
 
         Parameters
         ----------
         subfolders_name_list
             The name of subfolders to be created in media pool.
+
+        Notes
+        -----
+        -   If the folder to be created is the same as the existing one, skip and
+        do not create it. Duplication aware.
+        -   When all the new folders are created, the attention will be returned to
+        the **currently selected folder** which is parent folder of each camera
+        folder.
 
         """
         current_selected_bin = self.media_pool.GetCurrentFolder()
@@ -163,8 +171,16 @@ class QC(Resolve):
 
     def import_clip(self) -> None:
         """
-        Import footage from media storage into the currently selected folder's
-        cam bin.
+        Import footage from media storage to each camera folder of the currently
+        selected folder.
+
+        Notes
+        -----
+        If the clip to be imported already exists, `AddItemListToMediaPool()`
+        comes with a feature that prevents it from being imported repeatedly.
+        Return a list of the `MediaPoolItem` created, if duplicate, return an
+        empty list (`[]`).
+
 
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
@@ -202,10 +218,16 @@ class QC(Resolve):
         a new timeline based on the resolution and frame rate of the clips under
         that bin.
 
+        Create a new timeline for each clip with a different resolution and
+        frame rate under the camera bin.
+
         """
         parent_bin = self.media_pool.GetCurrentFolder()
 
         for subfolder in self.media_pool.GetCurrentFolder().GetSubFolderList():
+            # Skip the Timeline folder to avoid getting the res and fps
+            # information under this folder, because there is no valid
+            # res and fps information under this folder.
             if subfolder.GetName() == "Timeline":
                 continue
             res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
@@ -237,13 +259,13 @@ class QC(Resolve):
 
     def get_bin_res_and_fps(self, bin_name: str) -> dict[str, float]:
         """
-        Get the resolution and frame rate of all clips under the given bin,
-        return a dict.
+        Get the resolution and frame rate of all clips under the given camera
+        bin, return a dict.
 
         Parameters
         ----------
         bin_name
-            The existing camera bin in the media pool.
+            The name of the camera bin under the currently selected bin.
 
         Returns
         -------
@@ -256,6 +278,7 @@ class QC(Resolve):
         bin_res_fps_dict = {
             clip.GetClipProperty("Resolution"): clip.GetClipProperty("FPS")
             for clip in current_bin.GetClipList()  # type: ignore
+            # Exclude audio files since they do not have valid res info.
             if clip.GetClipProperty("type") != "Audio"
         }
 
@@ -271,7 +294,7 @@ class QC(Resolve):
         """
         Simply create empty timeline and change its resolution to inputs
         width and height, and its frame rate to input fps. Used for
-        `create_new_timeline()` function.
+        `create_new_timeline()`.
 
         Parameters
         ----------
@@ -314,9 +337,14 @@ class QC(Resolve):
         timeline. Set clip input colorspace (see `set_clip_colorspace()`) and so
         on.
 
+        If there is already a clip with the same name in the timeline, it will
+        not be appended to that timeline to avoid duplication.
+
         """
         current_folder = self.media_pool.GetCurrentFolder()
 
+        # Get the timeline to which it should be appended based on the clip's
+        # properties.
         for subfolder in current_folder.GetSubFolderList():
             if subfolder.GetName() == "Timeline":
                 continue
@@ -338,6 +366,7 @@ class QC(Resolve):
                             current_timeline_name
                         )
 
+                    # Duplication check
                     clips_currently_on_timeline: list[str] = [
                         timeline_clip.GetName()
                         for timeline_clip in current_timeline.GetItemListInTrack(  # type: ignore
@@ -347,6 +376,7 @@ class QC(Resolve):
                     if clip.GetName() in clips_currently_on_timeline:
                         continue
 
+                    # The actual appending action
                     if not self.project.SetCurrentTimeline(current_timeline):
                         log.debug(
                             f"append_to_timeline() project.SetCurrentTimeline()"
@@ -417,6 +447,8 @@ class QC(Resolve):
 
     def import_clip_one_by_one(self):
         """
+        Notes
+        -----
         Not working as expected so far: `SetCurrentFolder()` to parent too
         frequently. Don't use it.
 
