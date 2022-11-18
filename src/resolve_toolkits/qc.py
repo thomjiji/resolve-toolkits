@@ -131,50 +131,70 @@ class QC(Resolve):
             "Rec.709 Gamma 2.4": ["Others"],
         }
 
-    def create_and_change_timeline(
-        self,
-        timeline_name: str,
-        width: int,
-        height: int,
-        fps: int | float,
-    ) -> None:
+    def create_bin(self, subfolders_name_list: list):
         """
-        Simply create empty timeline and change its resolution to inputs
-        width and height, and its frame rate to input fps. Used for
-        `create_new_timeline()` function.
+        Create camera bin in current select bin.
 
         Parameters
         ----------
-        timeline_name
-            The name of the timeline that will be created.
-        width
-            The width of the timeline that will be created.
-        height
-            The height of the timeline that will be created.
-        fps
-            The frame rate of the timeline that will be created.
-
-        Returns
-        -------
-        bool
-            If `SetSetting()` is all right, it will return True, otherwise it
-            will be False.
+        subfolders_name_list
+            The name of subfolders to be created in media pool.
 
         """
-        if isinstance(fps, float) and self.media_pool.CreateEmptyTimeline(
-            timeline_name
+        current_selected_bin = self.media_pool.GetCurrentFolder()
+
+        for subfolder_name in subfolders_name_list:
+            # If the bin to be created does not yet exist, create it, otherwise
+            # skip it to avoid duplication.
+            if not subfolder_name in [
+                subfolder.GetName()
+                for subfolder in current_selected_bin.GetSubFolderList()
+            ]:
+                self.media_pool.AddSubFolder(
+                    current_selected_bin, subfolder_name
+                )
+
+        if not "Timeline" in [
+            subfolder.GetName()
+            for subfolder in current_selected_bin.GetSubFolderList()
+        ]:
+            self.media_pool.AddSubFolder(current_selected_bin, "Timeline")
+        self.media_pool.SetCurrentFolder(current_selected_bin)
+
+    def import_clip(self) -> None:
+        """
+        Import footage from media storage into the currently selected folder's
+        cam bin.
+
+        """
+        media_parent_dir = os.path.basename(self.media_parent_path)
+        current_parent_folder = self.media_pool.GetCurrentFolder()
+
+        for cam_path in self.media_storage.GetSubFolderList(
+            self.media_parent_path
         ):
-            current_timeline = self.project.GetCurrentTimeline()
-            current_timeline.SetSetting("useCustomSettings", "1")
-            current_timeline.SetSetting("timelineResolutionWidth", str(width))
-            current_timeline.SetSetting("timelineResolutionHeight", str(height))
-            current_timeline.SetSetting("timelineFrameRate", str(int(fps)))
-        elif self.media_pool.CreateEmptyTimeline(timeline_name):
-            current_timeline = self.project.GetCurrentTimeline()
-            current_timeline.SetSetting("useCustomSettings", "1")
-            current_timeline.SetSetting("timelineResolutionWidth", str(width))
-            current_timeline.SetSetting("timelineResolutionHeight", str(height))
-            current_timeline.SetSetting("timelineFrameRate", str(fps))
+            filename_and_fullpath_value = get_sorted_path(cam_path)
+            if sys.platform.startswith("win") or sys.platform.startswith(
+                "cygwin"
+            ):
+                bin_name = cam_path.split("\\")[
+                    cam_path.split("\\").index(media_parent_dir) + 1
+                ]
+                current_folder = self.get_subfolder_by_name_recursively(
+                    bin_name
+                )
+            else:
+                bin_name = cam_path.split("/")[
+                    cam_path.split("/").index(media_parent_dir) + 1
+                ]
+                current_folder = self.get_subfolder_by_name_recursively(
+                    bin_name
+                )
+            self.media_pool.SetCurrentFolder(current_folder)
+            self.media_storage.AddItemListToMediaPool(
+                filename_and_fullpath_value
+            )
+            self.media_pool.SetCurrentFolder(current_parent_folder)
 
     def create_timeline_qc(self):
         """
@@ -241,35 +261,50 @@ class QC(Resolve):
 
         return bin_res_fps_dict
 
-    def create_bin(self, subfolders_name_list: list):
+    def create_and_change_timeline(
+        self,
+        timeline_name: str,
+        width: int,
+        height: int,
+        fps: int | float,
+    ) -> None:
         """
-        Create camera bin in current select bin.
+        Simply create empty timeline and change its resolution to inputs
+        width and height, and its frame rate to input fps. Used for
+        `create_new_timeline()` function.
 
         Parameters
         ----------
-        subfolders_name_list
-            The name of subfolders to be created in media pool.
+        timeline_name
+            The name of the timeline that will be created.
+        width
+            The width of the timeline that will be created.
+        height
+            The height of the timeline that will be created.
+        fps
+            The frame rate of the timeline that will be created.
+
+        Returns
+        -------
+        bool
+            If `SetSetting()` is all right, it will return True, otherwise it
+            will be False.
 
         """
-        current_selected_bin = self.media_pool.GetCurrentFolder()
-
-        for subfolder_name in subfolders_name_list:
-            # If the bin to be created does not yet exist, create it, otherwise
-            # skip it to avoid duplication.
-            if not subfolder_name in [
-                subfolder.GetName()
-                for subfolder in current_selected_bin.GetSubFolderList()
-            ]:
-                self.media_pool.AddSubFolder(
-                    current_selected_bin, subfolder_name
-                )
-
-        if not "Timeline" in [
-            subfolder.GetName()
-            for subfolder in current_selected_bin.GetSubFolderList()
-        ]:
-            self.media_pool.AddSubFolder(current_selected_bin, "Timeline")
-        self.media_pool.SetCurrentFolder(current_selected_bin)
+        if isinstance(fps, float) and self.media_pool.CreateEmptyTimeline(
+            timeline_name
+        ):
+            current_timeline = self.project.GetCurrentTimeline()
+            current_timeline.SetSetting("useCustomSettings", "1")
+            current_timeline.SetSetting("timelineResolutionWidth", str(width))
+            current_timeline.SetSetting("timelineResolutionHeight", str(height))
+            current_timeline.SetSetting("timelineFrameRate", str(int(fps)))
+        elif self.media_pool.CreateEmptyTimeline(timeline_name):
+            current_timeline = self.project.GetCurrentTimeline()
+            current_timeline.SetSetting("useCustomSettings", "1")
+            current_timeline.SetSetting("timelineResolutionWidth", str(width))
+            current_timeline.SetSetting("timelineResolutionHeight", str(height))
+            current_timeline.SetSetting("timelineFrameRate", str(fps))
 
     def append_to_timeline(self):
         """
@@ -320,31 +355,6 @@ class QC(Resolve):
                     self.media_pool.AppendToTimeline(clip)
                     self.set_clip_colorspace(clip)
 
-    def set_project_color_management(self):
-        """
-        Notes
-        -----
-        DaVinici Resolve has no so much API for ACES, so we use DaVinci YRGB
-        Color Managed instead.
-
-        -   `isAutoColorManage`: 0. Set to False ("0").
-        -   `useCATransform`: Use white point adaptation. Set to True ("1").
-        -   `useColorSpaeAwareGradingTools`: Use color space aware grading
-            tools. Set to True ("1").
-
-        """
-        self.project.SetSetting("colorScienceMode", "davinciYRGBColorManagedv2")
-        self.project.SetSetting("isAutoColorManage", "0")
-        self.project.SetSetting("colorSpaceTimeline", "DaVinci WG/Intermediate")
-        self.project.SetSetting("colorSpaceInput", "Rec.709 Gamma 2.4")
-        self.project.SetSetting("colorSpaceOutput", "Rec.709 Gamma 2.4")
-        self.project.SetSetting("timelineWorkingLuminanceMode", "SDR 100")
-        self.project.SetSetting("timelineWorkingLuminanceMode", "SDR 100")
-        self.project.SetSetting("inputDRT", "DaVinci")
-        self.project.SetSetting("outputDRT", "DaVinci")
-        self.project.SetSetting("useCATransform", "1")
-        self.project.SetSetting("useColorSpaceAwareGradingTools", "1")
-
     def set_clip_colorspace(self, clip):
 
         # By looking at which folder this clip comes from, we can compare it
@@ -380,40 +390,30 @@ class QC(Resolve):
                 f"succeed. "
             )
 
-    def import_clip(self) -> None:
+    def set_project_color_management(self):
         """
-        Import footage from media storage into the currently selected folder's
-        cam bin.
+        Notes
+        -----
+        DaVinici Resolve has no so much API for ACES, so we use DaVinci YRGB
+        Color Managed instead.
+
+        -   `isAutoColorManage`: 0. Set to False ("0").
+        -   `useCATransform`: Use white point adaptation. Set to True ("1").
+        -   `useColorSpaeAwareGradingTools`: Use color space aware grading
+            tools. Set to True ("1").
 
         """
-        media_parent_dir = os.path.basename(self.media_parent_path)
-        current_parent_folder = self.media_pool.GetCurrentFolder()
-
-        for cam_path in self.media_storage.GetSubFolderList(
-            self.media_parent_path
-        ):
-            filename_and_fullpath_value = get_sorted_path(cam_path)
-            if sys.platform.startswith("win") or sys.platform.startswith(
-                "cygwin"
-            ):
-                bin_name = cam_path.split("\\")[
-                    cam_path.split("\\").index(media_parent_dir) + 1
-                ]
-                current_folder = self.get_subfolder_by_name_recursively(
-                    bin_name
-                )
-            else:
-                bin_name = cam_path.split("/")[
-                    cam_path.split("/").index(media_parent_dir) + 1
-                ]
-                current_folder = self.get_subfolder_by_name_recursively(
-                    bin_name
-                )
-            self.media_pool.SetCurrentFolder(current_folder)
-            self.media_storage.AddItemListToMediaPool(
-                filename_and_fullpath_value
-            )
-            self.media_pool.SetCurrentFolder(current_parent_folder)
+        self.project.SetSetting("colorScienceMode", "davinciYRGBColorManagedv2")
+        self.project.SetSetting("isAutoColorManage", "0")
+        self.project.SetSetting("colorSpaceTimeline", "DaVinci WG/Intermediate")
+        self.project.SetSetting("colorSpaceInput", "Rec.709 Gamma 2.4")
+        self.project.SetSetting("colorSpaceOutput", "Rec.709 Gamma 2.4")
+        self.project.SetSetting("timelineWorkingLuminanceMode", "SDR 100")
+        self.project.SetSetting("timelineWorkingLuminanceMode", "SDR 100")
+        self.project.SetSetting("inputDRT", "DaVinci")
+        self.project.SetSetting("outputDRT", "DaVinci")
+        self.project.SetSetting("useCATransform", "1")
+        self.project.SetSetting("useColorSpaceAwareGradingTools", "1")
 
     def import_clip_one_by_one(self):
         """
