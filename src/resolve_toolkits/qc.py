@@ -305,7 +305,7 @@ class QC(Resolve):
 
                     clips_currently_on_timeline: list[str] = [
                         timeline_clip.GetName()
-                        for timeline_clip in current_timeline.GetItemListInTrack(
+                        for timeline_clip in current_timeline.GetItemListInTrack(  # type: ignore
                             "video", 1
                         )
                     ]

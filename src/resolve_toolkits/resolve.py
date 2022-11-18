@@ -1,3 +1,4 @@
+from typing import Optional
 from src.resolve_toolkits.resolve_init import GetResolve
 from src.resolve_toolkits.type import Folder
 from src.resolve_toolkits.type import Timeline
@@ -44,13 +45,13 @@ class Resolve:
             all_timeline.append(self.project.GetTimelineByIndex(timeline_index))
         return all_timeline
 
-    def get_timeline_by_name(self, timeline_name: str) -> str | Timeline:
+    def get_timeline_by_name(self, timeline_name: str) -> Optional[Timeline]:
         """Get timeline object by name."""
         all_timeline = self.get_all_timeline()
         timeline_dict = {
             timeline.GetName(): timeline for timeline in all_timeline
         }
-        return timeline_dict.get(timeline_name, "")
+        return timeline_dict.get(timeline_name)
 
     def get_subfolder_by_name(self, subfolder_name: str) -> Folder | str:
         """
