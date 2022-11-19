@@ -142,11 +142,11 @@ class QC(Resolve):
 
         Notes
         -----
-        -   If the folder to be created is the same as the existing one, skip and
-        do not create it. Duplication aware.
-        -   When all the new folders are created, the attention will be returned to
-        the **currently selected folder** which is parent folder of each camera
-        folder.
+        -   If the folder to be created is the same as the existing one, skip
+        and do not create it. Duplication aware.
+        -   When all the new folders are created, the attention will be returned
+        to the **currently selected folder** which is parent folder of each
+        camera folder.
 
         """
         current_selected_bin = self.media_pool.GetCurrentFolder()
