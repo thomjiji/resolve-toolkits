@@ -1,5 +1,7 @@
-from resolve_init import GetResolve
-from type import Folder, Timeline
+from typing import Optional
+from src.resolve_toolkits.resolve_init import GetResolve
+from src.resolve_toolkits.type import Folder
+from src.resolve_toolkits.type import Timeline
 
 
 class Resolve:
@@ -43,13 +45,13 @@ class Resolve:
             all_timeline.append(self.project.GetTimelineByIndex(timeline_index))
         return all_timeline
 
-    def get_timeline_by_name(self, timeline_name: str) -> str | Timeline:
+    def get_timeline_by_name(self, timeline_name: str) -> Optional[Timeline]:
         """Get timeline object by name."""
-        all_timeline: list[Timeline] = self.get_all_timeline()
+        all_timeline = self.get_all_timeline()
         timeline_dict = {
-            timeline.GetName(): timeline for timeline in all_timeline  # type: ignore
+            timeline.GetName(): timeline for timeline in all_timeline
         }
-        return timeline_dict.get(timeline_name, "")
+        return timeline_dict.get(timeline_name)
 
     def get_subfolder_by_name(self, subfolder_name: str) -> Folder | str:
         """
@@ -67,6 +69,8 @@ class Resolve:
         """
         Traverse the media pool recursively, return a dictionary containing all
         the subfolders (Folder object) and their names.
+
+        Recursion starts from the currently selected folder by default.
 
         Parameters
         ----------
@@ -107,7 +111,7 @@ class Resolve:
 
     def get_subfolder_by_name_recursively(
         self, subfolder_name: str, recursion_begins_at_root=False
-    ) -> Folder:
+    ) -> Folder | None:
         """
         Traverse the media pool recursively, find the subfolder (Folder object)
         by given name. If there are subfolders with the same name, it will only
@@ -115,10 +119,10 @@ class Resolve:
 
         Parameters
         ----------
-        subfolder_name:
+        subfolder_name
             The name of the subfolder you want to find and get the corresponding
             Folder object of it.
-        recursion_begins_at_root:
+        recursion_begins_at_root
             If True, the recursion will begin at the root folder. If False, the
             recursion will begin at the current selected folder in the media
             pool.
@@ -131,12 +135,4 @@ class Resolve:
         if subfolder:
             return subfolder
         else:
-            current_selected_folder = self.media_pool.GetCurrentFolder()
-            if recursion_begins_at_root:
-                raise Exception(
-                    f"Can't find the subfolder with the given name in root folder."
-                )
-            else:
-                raise Exception(
-                    f"Can't find the subfolder with the given name in '{current_selected_folder.GetName()}'."
-                )
+            return None
