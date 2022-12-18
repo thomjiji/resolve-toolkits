@@ -1,7 +1,7 @@
 from typing import Optional
-from src.resolve_toolkits.resolve_init import GetResolve
-from src.resolve_toolkits.type import Folder
-from src.resolve_toolkits.type import Timeline
+from resolve_init import GetResolve
+from type import Folder
+from type import Timeline
 
 
 class Resolve:

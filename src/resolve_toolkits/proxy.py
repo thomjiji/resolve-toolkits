@@ -8,7 +8,7 @@ import logging
 from typing import Iterable
 from typing import AnyStr
 
-from src.resolve_toolkits.resolve import Resolve
+from resolve import Resolve
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 

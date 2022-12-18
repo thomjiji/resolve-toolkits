@@ -5,9 +5,9 @@ import re
 import sys
 import os
 import logging
-from src.resolve_toolkits.proxy import Proxy
-from src.resolve_toolkits.proxy import get_sorted_path
-from src.resolve_toolkits.resolve import Resolve
+from proxy import Proxy
+from proxy import get_sorted_path
+from resolve import Resolve
 
 DROP_FRAME_FPS = [23.98, 29.97, 59.94, 119.88]
 
