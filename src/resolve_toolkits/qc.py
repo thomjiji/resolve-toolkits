@@ -162,7 +162,7 @@ class QC(Resolve):
                     current_selected_bin, subfolder_name
                 )
 
-        if not "Timeline" in [
+        if "Timeline" not in [
             subfolder.GetName()
             for subfolder in current_selected_bin.GetSubFolderList()
         ]:
