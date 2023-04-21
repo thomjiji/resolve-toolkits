@@ -154,7 +154,7 @@ class QC(Resolve):
         for subfolder_name in subfolders_name_list:
             # If the bin to be created does not yet exist, create it, otherwise
             # skip it to avoid duplication.
-            if not subfolder_name in [
+            if subfolder_name not in [
                 subfolder.GetName()
                 for subfolder in current_selected_bin.GetSubFolderList()
             ]:
@@ -386,7 +386,6 @@ class QC(Resolve):
                     self.set_clip_colorspace(clip)
 
     def set_clip_colorspace(self, clip):
-
         # By looking at which folder this clip comes from, we can compare it
         # with the `camera_log_dict` in QC attribute to get its color space
         # information.
