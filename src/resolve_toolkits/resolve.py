@@ -1,5 +1,5 @@
 from typing import Optional
-from resolve_init import GetResolve
+from src.resolve_init import GetResolve
 from type import Folder
 from type import Timeline
 

@@ -80,9 +80,9 @@ def get_subfolders_name(source_media_full_path: list[str]) -> list[str]:
 def get_sorted_path(path: str) -> list:
     """
     Get the absolute path of all files from the given path, then sort the abs
-    paths, finally return a list of sorted absolute paths. Filter out the files 
+    paths, finally return a list of sorted absolute paths. Filter out the files
     with suffix in the INVALID_EXTENSION.
-    
+
     Parameters
     ----------
     path
@@ -208,7 +208,7 @@ class Proxy(Resolve):
 
     def get_resolution(self) -> list[str]:
         """
-        Get all clip's resolution, return a list consist all all resolution
+        Get all clip's resolution, return a list consist all the resolution
         string.
 
         Returns
@@ -291,8 +291,8 @@ class Proxy(Resolve):
         existing_timeline_resolution = []
         for existing_timeline in self.get_all_timeline():
             existing_timeline_resolution.append(
-                f"{existing_timeline.GetSetting('timelineResolutionWidth')}"  # type: ignore
-                f"x{existing_timeline.GetSetting('timelineResolutionHeight')}"  # type: ignore
+                f"{existing_timeline.GetSetting('timelineResolutionWidth')}"
+                f"x{existing_timeline.GetSetting('timelineResolutionHeight')}"
             )
         if f"{str(width)}x{str(height)}" not in existing_timeline_resolution:
             return self.create_and_change_timeline(timeline_name, width, height)
@@ -306,7 +306,7 @@ class Proxy(Resolve):
     def append_to_timeline(self) -> None:
         """Append to timeline"""
         all_timeline_name = [
-            timeline.GetName() for timeline in self.get_all_timeline()  # type: ignore
+            timeline.GetName() for timeline in self.get_all_timeline()
         ]
         for subfolder in self.root_folder.GetSubFolderList():
             for clip in subfolder.GetClipList():
@@ -358,11 +358,11 @@ class Proxy(Resolve):
             for timeline in self.get_all_timeline():
                 self.project.SetCurrentTimeline(timeline)
                 try:
-                    os.mkdir(f"{self.proxy_parent_path}/{timeline.GetName()}")  # type: ignore
+                    os.mkdir(f"{self.proxy_parent_path}/{timeline.GetName()}")
                 except FileExistsError:
                     pass
                 rendering_setting = {
-                    "TargetDir": f"{self.proxy_parent_path}/{timeline.GetName()}",  # type: ignore
+                    "TargetDir": f"{self.proxy_parent_path}/{timeline.GetName()}",
                     "ColorSpaceTag": "Same as Project",
                     "GammaTag": "Same as Project",
                 }
