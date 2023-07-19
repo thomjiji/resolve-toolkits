@@ -181,7 +181,6 @@ class QC(Resolve):
         Return a list of the `MediaPoolItem` created, if duplicate, return an
         empty list (`[]`).
 
-
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
         current_parent_folder = self.media_pool.GetCurrentFolder()
