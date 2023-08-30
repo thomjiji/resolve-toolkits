@@ -1,7 +1,6 @@
 from typing import Optional
-from src.resolve_init import GetResolve
-from type import Folder
-from type import Timeline
+from type import Folder, Timeline
+import DaVinciResolveScript as dvr_script
 
 
 class Resolve:
@@ -27,7 +26,7 @@ class Resolve:
 
     def __init__(self):
         """Initialize some necessary objects."""
-        self.resolve = GetResolve()
+        self.resolve = dvr_script.scriptapp("Resolve")
         self.project_manager = self.resolve.GetProjectManager()
         self.project = self.project_manager.GetCurrentProject()
         self.media_storage = self.resolve.GetMediaStorage()
@@ -48,9 +47,7 @@ class Resolve:
     def get_timeline_by_name(self, timeline_name: str) -> Optional[Timeline]:
         """Get timeline object by name."""
         all_timeline = self.get_all_timeline()
-        timeline_dict = {
-            timeline.GetName(): timeline for timeline in all_timeline
-        }
+        timeline_dict = {timeline.GetName(): timeline for timeline in all_timeline}
         return timeline_dict.get(timeline_name)
 
     def get_subfolder_by_name(self, subfolder_name: str) -> Folder | str:
@@ -58,9 +55,7 @@ class Resolve:
         Get subfolder (Folder object) under the root folder in the media pool.
         """
         all_subfolder = self.root_folder.GetSubFolderList()
-        subfolder_dict = {
-            subfolder.GetName(): subfolder for subfolder in all_subfolder
-        }
+        subfolder_dict = {subfolder.GetName(): subfolder for subfolder in all_subfolder}
         return subfolder_dict.get(subfolder_name, "")
 
     def get_subfolder_recursively(
@@ -101,9 +96,7 @@ class Resolve:
             if subfolder.GetSubFolderList():
                 self.media_pool.SetCurrentFolder(subfolder)
                 subfolder_dict.setdefault(subfolder.GetName(), subfolder)
-                subfolder_dict = (
-                    subfolder_dict | self.get_subfolder_recursively()
-                )
+                subfolder_dict = subfolder_dict | self.get_subfolder_recursively()
             else:
                 subfolder_dict.setdefault(subfolder.GetName(), subfolder)
 
@@ -128,9 +121,9 @@ class Resolve:
             pool.
 
         """
-        subfolder = self.get_subfolder_recursively(
-            recursion_begins_at_root
-        ).get(subfolder_name)
+        subfolder = self.get_subfolder_recursively(recursion_begins_at_root).get(
+            subfolder_name
+        )
 
         if subfolder:
             return subfolder
