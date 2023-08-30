@@ -8,4 +8,14 @@ positional arguments:
   output      Output path of proxy rendering.
 
 options:
+  -h, --help  show this help message and exi
+
+usage: qc.py [-h] path
+
+Automate source media import, Bin, Timeline creation and color management setting in DaVinci Resolve. Run it, and begin your QC job. Simplify all the intermediate process.
+
+positional arguments:
+  path        Source media absolute path
+
+options:
   -h, --help  show this help message and exit
