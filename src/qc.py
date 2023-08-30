@@ -96,9 +96,9 @@ def is_camera_dir(text: str) -> bool:
 
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="qc is a commandline tool to automate media import, "
-        "Bin, Timeline creation and color management setting in DaVinci "
-        "Resolve.",
+        description="Automate source media import, Bin, Timeline creation and color "
+        "management setting in DaVinci Resolve. Run it, and begin your QC job. Simplify"
+        " all the intermediate process.",
     )
     parser.add_argument(
         "path",
