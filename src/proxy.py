@@ -164,13 +164,9 @@ class Proxy(Resolve):
         media_parent_dir = os.path.basename(self.media_parent_path)
 
         if not one_by_one:
-            for cam_path in self.media_storage.GetSubFolderList(
-                self.media_parent_path
-            ):
+            for cam_path in self.media_storage.GetSubFolderList(self.media_parent_path):
                 filename_and_fullpath_value = get_sorted_path(cam_path)
-                if sys.platform.startswith("win") or sys.platform.startswith(
-                    "cygwin"
-                ):
+                if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
                     name = cam_path.split("\\")[
                         cam_path.split("\\").index(media_parent_dir) + 1
                     ]
@@ -181,14 +177,10 @@ class Proxy(Resolve):
                     )
 
                 self.media_pool.SetCurrentFolder(current_folder)
-                self.media_storage.AddItemListToMediaPool(
-                    filename_and_fullpath_value
-                )
+                self.media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
         else:
             for abs_media_path in get_sorted_path(self.media_parent_path):
-                if sys.platform.startswith("win") or sys.platform.startswith(
-                    "cygwin"
-                ):
+                if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
                     name = abs_media_path.split("\\")[
                         abs_media_path.split("\\").index(media_parent_dir) + 1
                     ]
@@ -199,9 +191,7 @@ class Proxy(Resolve):
                     name = abs_media_path.split("/")[
                         abs_media_path.split("/").index(media_parent_dir) + 1
                     ]
-                    current_folder = self.get_subfolder_by_name_recursively(
-                        name
-                    )
+                    current_folder = self.get_subfolder_by_name_recursively(name)
                     self.media_pool.SetCurrentFolder(current_folder)
                 self.media_pool.ImportMedia(abs_media_path)
 
@@ -258,9 +248,7 @@ class Proxy(Resolve):
         current_timeline.SetSetting("timelineResolutionHeight", str(height))
         return current_timeline.SetSetting("timelineFrameRate", str(25))
 
-    def create_new_timeline(
-        self, timeline_name: str, width: int, height: int
-    ) -> bool:
+    def create_new_timeline(self, timeline_name: str, width: int, height: int) -> bool:
         """
         Create new timeline in the _Timeline bin (the last folder under root
         folder). Check timeline duplication.
@@ -297,28 +285,20 @@ class Proxy(Resolve):
             return self.create_and_change_timeline(timeline_name, width, height)
         else:
             current_timeline = self.project.GetCurrentTimeline()
-            new_name = (
-                f"{current_timeline.GetName()}_{str(width)}x{str(height)}"
-            )
+            new_name = f"{current_timeline.GetName()}_{str(width)}x{str(height)}"
             return current_timeline.SetName(new_name)
 
     def append_to_timeline(self) -> None:
         """Append to timeline"""
-        all_timeline_name = [
-            timeline.GetName() for timeline in self.get_all_timeline()
-        ]
+        all_timeline_name = [timeline.GetName() for timeline in self.get_all_timeline()]
         for subfolder in self.root_folder.GetSubFolderList():
             for clip in subfolder.GetClipList():
                 if (
                     clip.GetClipProperty("type") == "Video"
                     or clip.GetClipProperty("type") == "Video + Audio"
                 ):
-                    clip_width = clip.GetClipProperty("Resolution").split("x")[
-                        0
-                    ]
-                    clip_height = clip.GetClipProperty("Resolution").split("x")[
-                        1
-                    ]
+                    clip_width = clip.GetClipProperty("Resolution").split("x")[0]
+                    clip_height = clip.GetClipProperty("Resolution").split("x")[1]
                     for name in all_timeline_name:
                         if f"{clip_width}x{clip_height}" in name:
                             self.project.SetCurrentTimeline(
@@ -374,9 +354,6 @@ class Proxy(Resolve):
         """
         Set the project color management to DaVinci YRGB and timeline color
         space to Rec.709 Gamma 2.4.
-
-        Returns
-        -------
 
         Notes
         -----
@@ -434,7 +411,7 @@ def create_parser() -> argparse.ArgumentParser:
 def main():
     parser = create_parser()
 
-    # Show help message if no arguments are provided.
+    # Show help messages if no arguments are provided.
     if len(sys.argv) == 1:
         parser.print_help()
 
@@ -500,13 +477,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    # for render_job in project.GetRenderJobList():
-    #     pprint(render_job)
-
-    # # Job status check
-    # job_id_list = [
-    #     render_job.get('JobId')
-    #     for render_job in r.project.GetRenderJobList()
-    # ]
-    # print(project.GetRenderJobStatus(job_id_list[1]))

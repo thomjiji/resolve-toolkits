@@ -409,10 +409,10 @@ class QC(Resolve):
         DaVinici Resolve has no so much API for ACES, so we use DaVinci YRGB
         Color Managed instead.
 
-        -   `isAutoColorManage`: 0. Set to False ("0").
-        -   `useCATransform`: Use white point adaptation. Set to True ("1").
-        -   `useColorSpaeAwareGradingTools`: Use color space aware grading
-            tools. Set to True ("1").
+        - `isAutoColorManage`: 0. Set to False ("0").
+        - `useCATransform`: Use white point adaptation. Set to True ("1").
+        - `useColorSpaeAwareGradingTools`: Use color space aware grading tools. Set to
+        True ("1").
 
         """
         self.project.SetSetting("colorScienceMode", "davinciYRGBColorManagedv2")
