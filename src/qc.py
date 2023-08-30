@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
+import logging
+import os
 import re
 import sys
-import os
-import logging
-from proxy import Proxy
-from proxy import get_sorted_path
+
+from proxy import Proxy, get_sorted_path
 from resolve import Resolve
 
 DROP_FRAME_FPS = [23.98, 29.97, 59.94, 119.88]
@@ -97,8 +97,8 @@ def is_camera_dir(text: str) -> bool:
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Automate source media import, Bin, Timeline creation and color "
-        "management setting in DaVinci Resolve. Run it, and begin your QC job. Simplify"
-        " all the intermediate process.",
+        "management setting in DaVinci Resolve. Run it to start your QC job and "
+        "eliminate all the intermediate process.",
     )
     parser.add_argument(
         "path",
@@ -158,13 +158,10 @@ class QC(Resolve):
                 subfolder.GetName()
                 for subfolder in current_selected_bin.GetSubFolderList()
             ]:
-                self.media_pool.AddSubFolder(
-                    current_selected_bin, subfolder_name
-                )
+                self.media_pool.AddSubFolder(current_selected_bin, subfolder_name)
 
         if "Timeline" not in [
-            subfolder.GetName()
-            for subfolder in current_selected_bin.GetSubFolderList()
+            subfolder.GetName() for subfolder in current_selected_bin.GetSubFolderList()
         ]:
             self.media_pool.AddSubFolder(current_selected_bin, "Timeline")
         self.media_pool.SetCurrentFolder(current_selected_bin)
@@ -185,30 +182,20 @@ class QC(Resolve):
         media_parent_dir = os.path.basename(self.media_parent_path)
         current_parent_folder = self.media_pool.GetCurrentFolder()
 
-        for cam_path in self.media_storage.GetSubFolderList(
-            self.media_parent_path
-        ):
+        for cam_path in self.media_storage.GetSubFolderList(self.media_parent_path):
             filename_and_fullpath_value = get_sorted_path(cam_path)
-            if sys.platform.startswith("win") or sys.platform.startswith(
-                "cygwin"
-            ):
+            if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
                 bin_name = cam_path.split("\\")[
                     cam_path.split("\\").index(media_parent_dir) + 1
                 ]
-                current_folder = self.get_subfolder_by_name_recursively(
-                    bin_name
-                )
+                current_folder = self.get_subfolder_by_name_recursively(bin_name)
             else:
                 bin_name = cam_path.split("/")[
                     cam_path.split("/").index(media_parent_dir) + 1
                 ]
-                current_folder = self.get_subfolder_by_name_recursively(
-                    bin_name
-                )
+                current_folder = self.get_subfolder_by_name_recursively(bin_name)
             self.media_pool.SetCurrentFolder(current_folder)
-            self.media_storage.AddItemListToMediaPool(
-                filename_and_fullpath_value
-            )
+            self.media_storage.AddItemListToMediaPool(filename_and_fullpath_value)
             self.media_pool.SetCurrentFolder(current_parent_folder)
 
     def create_timeline_qc(self):
@@ -232,7 +219,9 @@ class QC(Resolve):
             res_fps_dict = self.get_bin_res_and_fps(subfolder.GetName())
             for res, fps in res_fps_dict.items():
                 if fps in DROP_FRAME_FPS:
-                    timeline_name = f"{parent_bin.GetName()}_{subfolder.GetName()}_{res}_{fps}p"
+                    timeline_name = (
+                        f"{parent_bin.GetName()}_{subfolder.GetName()}_{res}_{fps}p"
+                    )
                     self.media_pool.SetCurrentFolder(
                         self.get_subfolder_by_name_recursively("Timeline")
                     )
@@ -391,17 +380,12 @@ class QC(Resolve):
         clip_path = clip.GetClipProperty("File Path")
         if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
             cam_name = clip_path.split("\\")[
-                clip_path.split("\\").index(
-                    os.path.basename(self.media_parent_path)
-                )
+                clip_path.split("\\").index(os.path.basename(self.media_parent_path))
                 + 1
             ].split("#")[0]
         else:
             cam_name = clip_path.split("/")[
-                clip_path.split("/").index(
-                    os.path.basename(self.media_parent_path)
-                )
-                + 1
+                clip_path.split("/").index(os.path.basename(self.media_parent_path)) + 1
             ].split("#")[0]
         camera_log_key = list(self.camera_log_dict.keys())
         camera_log_val = list(self.camera_log_dict.values())
@@ -455,9 +439,7 @@ class QC(Resolve):
         current_parent_folder = self.media_pool.GetCurrentFolder()
 
         for abs_media_path in get_sorted_path(self.media_parent_path):
-            if sys.platform.startswith("win") or sys.platform.startswith(
-                "cygwin"
-            ):
+            if sys.platform.startswith("win") or sys.platform.startswith("cygwin"):
                 name = abs_media_path.split("\\")[
                     abs_media_path.split("\\").index(media_parent_dir) + 1
                 ]

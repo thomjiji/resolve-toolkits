@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
+import logging
 import os
 import re
 import sys
-import logging
-from typing import Iterable
-from typing import AnyStr
+from typing import AnyStr, Iterable
 
 from resolve import Resolve
 

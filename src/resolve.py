@@ -1,20 +1,20 @@
 from typing import Optional
-from type import Folder, Timeline
+
 import DaVinciResolveScript as dvr_script
+from type import Folder, Timeline
 
 
 class Resolve:
     """
     Resolve class
 
-    This class is used to initialize some necessary objects for the basic use of
-    the API.
+    This class is used to initialize some necessary objects for the basic use of the
+    API.
 
     Attributes
     ----------
     resolve
-        resolve object, the beginning of all the other object of DaVinci
-        Resolve.
+        resolve object, the origin of all the other objects in DaVinci Resolve.
     project_manager
     project
     media_storage
@@ -34,17 +34,16 @@ class Resolve:
         self.root_folder = self.media_pool.GetRootFolder()
         self.current_timeline = self.project.GetCurrentTimeline()
 
-    def get_all_timeline(self) -> list[Timeline]:
+    def get_all_timeline(self) -> list:
         """
-        Get all existing timelines. Return a list containing all the timeline
-        object.
+        Get all existing timelines. Return a list containing all the timeline objects.
         """
         all_timeline = []
         for timeline_index in range(1, self.project.GetTimelineCount() + 1, 1):
             all_timeline.append(self.project.GetTimelineByIndex(timeline_index))
         return all_timeline
 
-    def get_timeline_by_name(self, timeline_name: str) -> Optional[Timeline]:
+    def get_timeline_by_name(self, timeline_name: str):
         """Get timeline object by name."""
         all_timeline = self.get_all_timeline()
         timeline_dict = {timeline.GetName(): timeline for timeline in all_timeline}
@@ -88,7 +87,7 @@ class Resolve:
         subfolder_dict = {}
 
         for subfolder in current_selected_folder.GetSubFolderList():
-            # if subfolder has child bins, its `GetSubFolderList()` method will
+            # If subfolder has child bins, its `GetSubFolderList()` method will
             # return a list, otherwise it will return `[]` which is False. If it
             # is True (means subfolder does have child bins), it will go to the
             # next level of recursion until there is no child bin
