@@ -40,7 +40,6 @@ def absolute_file_paths(path: str) -> list:
     ----------
     path
         The path to be walked through.
-
     """
     absolute_file_path_list = []
     for directory_path, _, filenames in os.walk(path):
@@ -66,7 +65,6 @@ def get_subfolders_name(path: list[str]) -> list[str]:
     -------
     list
         Containing subfolders name.
-
     """
     return [os.path.split(i)[1] for i in path]
 
@@ -85,7 +83,6 @@ def is_camera_dir(text: str) -> bool:
     -------
     bool
         Yes or no
-
     """
     matched = re.search(r"^.+#\d$", text)
     if matched:
@@ -117,7 +114,6 @@ class QC(Resolve):
         ----------
         input_path
             The path of the source clips.
-
         """
         super().__init__()
         self.media_parent_path = input_path
@@ -147,7 +143,6 @@ class QC(Resolve):
         -   When all the new folders are created, the attention will be returned
         to the **currently selected folder** which is parent folder of each
         camera folder.
-
         """
         current_selected_bin = self.media_pool.GetCurrentFolder()
 
@@ -177,7 +172,6 @@ class QC(Resolve):
         comes with a feature that prevents it from being imported repeatedly.
         Return a list of the `MediaPoolItem` created, if duplicate, return an
         empty list (`[]`).
-
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
         current_parent_folder = self.media_pool.GetCurrentFolder()
@@ -260,7 +254,6 @@ class QC(Resolve):
         dict
             Containing the resolution and frame rate of all shots under the
             camera bin in the media pool, used by `create_timeline_qc()`.
-
         """
         current_bin = self.get_subfolder_by_name_recursively(bin_name)
         bin_res_fps_dict = {
@@ -300,7 +293,6 @@ class QC(Resolve):
         bool
             If `SetSetting()` is all right, it will return True, otherwise it
             will be False.
-
         """
         if isinstance(fps, float) and self.media_pool.CreateEmptyTimeline(
             timeline_name
@@ -327,7 +319,6 @@ class QC(Resolve):
 
         If there is already a clip with the same name in the timeline, it will
         not be appended to that timeline to avoid duplication.
-
         """
         current_folder = self.media_pool.GetCurrentFolder()
 
@@ -413,7 +404,6 @@ class QC(Resolve):
         - `useCATransform`: Use white point adaptation. Set to True ("1").
         - `useColorSpaeAwareGradingTools`: Use color space aware grading tools. Set to
         True ("1").
-
         """
         self.project.SetSetting("colorScienceMode", "davinciYRGBColorManagedv2")
         self.project.SetSetting("isAutoColorManage", "0")
@@ -431,9 +421,8 @@ class QC(Resolve):
         """
         Notes
         -----
-        Not working as expected so far: `SetCurrentFolder()` to parent too
-        frequently. Don't use it.
-
+        Not working as expected so far: `SetCurrentFolder()` to parent too frequently. 
+        Don't use it.
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
         current_parent_folder = self.media_pool.GetCurrentFolder()

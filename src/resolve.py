@@ -1,7 +1,5 @@
-from typing import Optional
-
 import DaVinciResolveScript as dvr_script
-from type import Folder, Timeline
+from type import Folder
 
 
 class Resolve:
@@ -10,18 +8,6 @@ class Resolve:
 
     This class is used to initialize some necessary objects for the basic use of the
     API.
-
-    Attributes
-    ----------
-    resolve
-        resolve object, the origin of all the other objects in DaVinci Resolve.
-    project_manager
-    project
-    media_storage
-    media_pool
-    root_folder
-    current_timeline
-
     """
 
     def __init__(self):
@@ -77,7 +63,6 @@ class Resolve:
         dict
             A dictionary containing all the subfolders (Folder object) and their
             names.
-
         """
         if recursion_begins_at_root:
             current_selected_folder = self.root_folder
@@ -118,7 +103,6 @@ class Resolve:
             If True, the recursion will begin at the root folder. If False, the
             recursion will begin at the current selected folder in the media
             pool.
-
         """
         subfolder = self.get_subfolder_recursively(recursion_begins_at_root).get(
             subfolder_name

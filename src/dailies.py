@@ -46,7 +46,6 @@ def absolute_file_paths(path: str) -> list:
     -------
     list
         A list containing all the abs path (str) of files under input path.
-
     """
     absolute_file_path_list = []
     for directory_path, _, filenames in os.walk(path):
@@ -71,7 +70,6 @@ def get_subfolders_name(source_media_full_path: list[str]) -> list[str]:
     -------
     list
         A list containing the name of the folders under the given path.
-
     """
     return [os.path.split(i)[1] for i in source_media_full_path]
 
@@ -92,7 +90,6 @@ def get_sorted_path(path: str) -> list:
     -------
     list
         A list containing all abs paths that have been sorted.
-
     """
     filename_and_fullpath_dict = {
         os.path.basename(os.path.splitext(path)[0]): path
@@ -115,7 +112,6 @@ class Proxy(Resolve):
     ----------
     media_parent_path
     proxy_parent_path
-
     """
 
     def __init__(self, input_path: str, output_path: str = ""):
@@ -128,7 +124,6 @@ class Proxy(Resolve):
             The media path.
         output_path
             The proxy path.
-
         """
         super().__init__()
         self.media_parent_path = input_path
@@ -159,7 +154,6 @@ class Proxy(Resolve):
         one_by_one
             If this parameter is specified a True, it will be imported one by
             one, which is relatively slow.
-
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
 
@@ -204,7 +198,6 @@ class Proxy(Resolve):
         -------
         list
             A list containing all the resolution information.
-
         """
         all_clips_resolution = []
         for subfolder in self.root_folder.GetSubFolderList():
@@ -239,7 +232,6 @@ class Proxy(Resolve):
         bool
             If `SetSetting()` is all right, it will return True, otherwise it
             will be False.
-
         """
         self.media_pool.CreateEmptyTimeline(timeline_name)
         current_timeline = self.project.GetCurrentTimeline()
@@ -265,7 +257,6 @@ class Proxy(Resolve):
         Returns
         -------
         bool
-
         """
         self.media_pool.SetCurrentFolder(
             self.root_folder.GetSubFolderList()[-1]
@@ -315,9 +306,7 @@ class Proxy(Resolve):
         - DaVinci Resolve Render Preset path
             - Windows: ``%USERNAME%\\AppData\\Roaming\\Blackmagic Design\\DaVinci Resolve\\Support\\Resolve Disk Database\\Resolve Projects\\Settings``
             - Mac OS: ``/Users/{user_name}/Library/Application Support/Blackmagic Design/DaVinci Resolve/Resolve Disk Database/Resolve Projects/Settings``
-
         """
-
         # Load H.265 preset.
         for preset in self.project.GetRenderPresetList():
             if re.search(r".*(Proxy).*(H\.265).*", preset):
@@ -364,9 +353,6 @@ class Proxy(Resolve):
         Timeline" will succeed, even if this operation is not necessary. If the
         project's default Output Color Space is not "Same as Timeline",
         there needs to be a mechanism to handle this.  # TODO
-
-        # TODO: 说一下为什么不设置 Rec.709-A 了
-
         """
         if self.project.SetSetting("colorScienceMode", "davinciYRGB"):
             timeline_color_space = self.project.GetSetting("colorSpaceTimeline")
@@ -392,7 +378,7 @@ class Proxy(Resolve):
 
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Proxy is a commandline tool to automatic import clips, "
+        description="dailies is a commandline tool to automatic import clips, "
         "create timelines, add to render queue using the predefined preset."
     )
     parser.add_argument(
