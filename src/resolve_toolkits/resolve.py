@@ -1,5 +1,5 @@
 import DaVinciResolveScript as dvr_script
-from type import Folder
+from src.resolve_toolkits.type import Folder
 
 
 class Resolve:

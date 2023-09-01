@@ -7,7 +7,7 @@ import re
 import sys
 from typing import AnyStr, Iterable
 
-from resolve import Resolve
+from src.resolve_toolkits.resolve import Resolve
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 
@@ -58,8 +58,8 @@ def absolute_file_paths(path: str) -> list:
 
 def get_subfolders_name(source_media_full_path: list[str]) -> list[str]:
     """
-    Extract sub-folder name from media storage full path. For creating
-    sub-folder in the media pool.
+    Extract subfolder name from media storage full path. For creating sub-folder in the
+    media pool.
 
     Parameters
     ----------
@@ -76,15 +76,14 @@ def get_subfolders_name(source_media_full_path: list[str]) -> list[str]:
 
 def get_sorted_path(path: str) -> list:
     """
-    Get the absolute path of all files from the given path, then sort the abs
-    paths, finally return a list of sorted absolute paths. Filter out the files
-    with suffix in the INVALID_EXTENSION.
+    Given a path, find the absolute paths of all files in that path. Filter out any
+    files with an extension in INVALID_EXTENSION. Sort the remaining absolute paths
+    alphabetically and return the sorted list of absolute paths.
 
     Parameters
     ----------
     path
-        The input path. The abs paths of all files in its subdirectories will be
-        sorted.
+        The input path. The abs paths of all files in its subdirectories will be sorted.
 
     Returns
     -------
@@ -191,8 +190,7 @@ class Proxy(Resolve):
 
     def get_resolution(self) -> list[str]:
         """
-        Get all clip's resolution, return a list consist all the resolution
-        string.
+        Get all clip's resolution, return a list consist all the resolution string.
 
         Returns
         -------
@@ -401,8 +399,9 @@ def main():
     if len(sys.argv) == 1:
         parser.print_help()
 
-    # Ensure that the output path exists.
     media_parent_path = parser.parse_args().input
+
+    # Ensure that the output path exists.
     if not os.path.exists(parser.parse_args().output):
         log.debug(
             f"{parser.parse_args().output} does not exist, program is terminated."

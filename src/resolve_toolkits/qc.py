@@ -6,7 +6,7 @@ import os
 import re
 import sys
 
-from proxy import Proxy, get_sorted_path
+from dailies import Proxy, get_sorted_path
 from resolve import Resolve
 
 DROP_FRAME_FPS = [23.98, 29.97, 59.94, 119.88]
@@ -421,7 +421,7 @@ class QC(Resolve):
         """
         Notes
         -----
-        Not working as expected so far: `SetCurrentFolder()` to parent too frequently. 
+        Not working as expected so far: `SetCurrentFolder()` to parent too frequently.
         Don't use it.
         """
         media_parent_dir = os.path.basename(self.media_parent_path)
