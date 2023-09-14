@@ -1,8 +1,10 @@
 import DaVinciResolveScript as dvr_script
-from src.resolve_toolkits.type import Folder
+
+from dri import Resolve
+from dri import Folder
 
 
-class Resolve:
+class BaseResolve:
     """
     Resolve class
 
@@ -12,7 +14,8 @@ class Resolve:
 
     def __init__(self):
         """Initialize some necessary objects."""
-        self.resolve = dvr_script.scriptapp("Resolve")
+        # self.resolve = dvr_script.scriptapp("Resolve")
+        self.resolve = Resolve.resolve_init()
         self.project_manager = self.resolve.GetProjectManager()
         self.project = self.project_manager.GetCurrentProject()
         self.media_storage = self.resolve.GetMediaStorage()

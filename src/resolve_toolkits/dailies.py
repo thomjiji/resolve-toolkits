@@ -7,7 +7,7 @@ import re
 import sys
 from typing import AnyStr, Iterable
 
-from src.resolve_toolkits.resolve import Resolve
+from src.resolve_toolkits.resolve import BaseResolve
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 
@@ -103,7 +103,7 @@ def get_sorted_path(path: str) -> list:
     return filename_and_fullpath_value
 
 
-class Proxy(Resolve):
+class Proxy(BaseResolve):
     """
     Proxy class
 
@@ -132,7 +132,7 @@ class Proxy(Resolve):
         # )
 
     def create_bin(self, subfolders_list: Iterable[AnyStr]) -> None:
-        """Create sub-folder in the media pool root folder."""
+        """Create subfolder in the media pool root folder."""
         for i in subfolders_list:
             self.media_pool.AddSubFolder(self.root_folder, i)
 
@@ -240,8 +240,8 @@ class Proxy(Resolve):
 
     def create_new_timeline(self, timeline_name: str, width: int, height: int) -> bool:
         """
-        Create new timeline in the _Timeline bin (the last folder under root
-        folder). Check timeline duplication.
+        Create new timeline in the _Timeline bin (the last folder under root folder).
+        Check timeline duplication.
 
         Parameters
         ----------
@@ -303,7 +303,7 @@ class Proxy(Resolve):
         -----
         - DaVinci Resolve Render Preset path
             - Windows: ``%USERNAME%\\AppData\\Roaming\\Blackmagic Design\\DaVinci Resolve\\Support\\Resolve Disk Database\\Resolve Projects\\Settings``
-            - Mac OS: ``/Users/{user_name}/Library/Application Support/Blackmagic Design/DaVinci Resolve/Resolve Disk Database/Resolve Projects/Settings``
+            - macOS: ``/Users/{user_name}/Library/Application Support/Blackmagic Design/DaVinci Resolve/Resolve Disk Database/Resolve Projects/Settings``
         """
         # Load H.265 preset.
         for preset in self.project.GetRenderPresetList():
@@ -447,16 +447,17 @@ def main():
     # queue sequentially.
     p.add_render_job()
 
-    # Before starting rendering, pause the program, confirm to the user if
-    # Burn-in has been added, and give the user time to confirm that other
-    # parameters are correct. Then start rendering.
-    if (
-        input(
-            "The program is paused, please add burn-in manually, then enter "
-            "'y' to start rendering. Enter 'n' to exit the program. y/n?"
-        )
-        == "y"
-    ):
+    # Pause the program prior to initiating the rendering process. Confirm with the user
+    # whether the Burn-in has been incorporated and whether the other configurations
+    # are accurate. Subsequently, commence the rendering.
+    render_input = input(
+        "The program is paused, please add burn-in manually, then enter 'y' to "
+        "start rendering. Enter 'n' to exit the program. Y/n?"
+    ).lower()  # Store the user input in a variable and make it lower case
+
+    # If user input is 'y' or if user pressed enter without typing anything,
+    # start rendering.
+    if render_input == "y" or render_input == "":
         p.project.StartRendering(isInteractiveMode=True)
 
 
