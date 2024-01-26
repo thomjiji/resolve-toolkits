@@ -8,10 +8,11 @@ positional arguments:
 
 options:
   -h, --help  show this help message and exit
-  
+
+
 usage: qc.py [-h] path
 
-Automate source media import, Bin, Timeline creation and color management setting in DaVinci Resolve. Run it to start your QC job and eliminate all the intermediate process.
+Automate source media import, Bin, Timeline creation and color management setting in DaVinci Resolve.
 
 positional arguments:
   path        Source media absolute path
