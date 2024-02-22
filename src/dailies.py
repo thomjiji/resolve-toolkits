@@ -258,7 +258,7 @@ class Proxy(BaseResolve):
         """
         self.media_pool.SetCurrentFolder(
             self.root_folder.GetSubFolderList()[-1]
-        )  # SetCurrentFolder to _Timeline bin to build the timeline here
+        )  # SetCurrentFolder to _Timeline bin to build the timeline there
 
         if self.project.GetTimelineCount() == 0:
             self.create_and_change_timeline(timeline_name, width, height)
