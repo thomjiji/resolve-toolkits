@@ -10,9 +10,15 @@ from pathlib import Path
 from tabulate import tabulate
 
 VALID_EXT = ["MP4", "MOV", "MXF"]
+# ANSI escape code for red color
+RED = "\033[91m"
+# ANSI escape code for bold text
+BOLD = "\033[1m"
+# ANSI escape code to reset text formatting
+RESET = "\033[0m"
 
 
-def save_to_csv(data, filename):
+def save_to_csv(data: list, filename: str) -> None:
     with open(filename, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["Filename", "Absolute Path"])
@@ -42,7 +48,9 @@ def check_filenames_exist(source_dir: str, target_dir: str, to_csv=False) -> Non
         missing_in_target_with_path = [
             (filename, source_dict[filename]) for filename in missing_in_target
         ]
-        print("The following files are missing in the proxy directory:\n")
+        print(
+            f"{RED}The following files are {BOLD}missing in the proxy directory:{RESET}\n"
+        )
         print(
             tabulate(
                 missing_in_target_with_path,
@@ -54,7 +62,7 @@ def check_filenames_exist(source_dir: str, target_dir: str, to_csv=False) -> Non
             csv_filename = "target_missing_files.csv"
             save_to_csv(missing_in_target_with_path, "target_missing_files.csv")
             print(
-                f"\nCSV file '{csv_filename}' containing missing files information has been saved to current directory."
+                f"\nCSV file '{csv_filename}' containing missing files information has been saved to current directory.\n"
             )
 
     if missing_in_source:
@@ -62,7 +70,7 @@ def check_filenames_exist(source_dir: str, target_dir: str, to_csv=False) -> Non
             (filename, target_dict[filename]) for filename in missing_in_source
         ]
         print(
-            "The following fiels are present in the proxy directory but missing in the source directory:\n"
+            f"{RED}The following files are present in the proxy directory but {BOLD}missing in the source directory:{RESET}\n"
         )
         print(
             tabulate(
