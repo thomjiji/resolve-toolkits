@@ -1,5 +1,3 @@
-import DaVinciResolveScript as dvr_script
-
 from dri import Resolve
 from dri import Folder
 
