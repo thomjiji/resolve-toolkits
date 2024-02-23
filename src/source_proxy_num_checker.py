@@ -1,13 +1,25 @@
+"""
+Check if the files in the source footage folder correspond one-to-one with the files in
+the proxy folder.
+"""
+
 import argparse
+import csv
 from pathlib import Path
-from pprint import pprint
 
 from tabulate import tabulate
 
 VALID_EXT = ["MP4", "MOV", "MXF"]
 
 
-def get_filenames_with_paths(directory):
+def save_to_csv(data, filename):
+    with open(filename, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["Filename", "Absolute Path"])
+        writer.writerows(data)
+
+
+def get_filenames_with_paths(directory: str) -> dict[str, str]:
     filenames_with_paths = {}
     for p in Path(directory).rglob("*"):
         if (
@@ -19,7 +31,7 @@ def get_filenames_with_paths(directory):
     return filenames_with_paths
 
 
-def check_filenames_exist(source_dir, target_dir):
+def check_filenames_exist(source_dir: str, target_dir: str, to_csv=False) -> None:
     source_dict = get_filenames_with_paths(source_dir)
     target_dict = get_filenames_with_paths(target_dir)
 
@@ -38,6 +50,12 @@ def check_filenames_exist(source_dir, target_dir):
                 tablefmt="simple",
             )
         )
+        if to_csv:
+            csv_filename = "target_missing_files.csv"
+            save_to_csv(missing_in_target_with_path, "target_missing_files.csv")
+            print(
+                f"\nCSV file '{csv_filename}' containing missing files information has been saved to current directory."
+            )
 
     if missing_in_source:
         missing_in_source_with_path = [
@@ -53,6 +71,12 @@ def check_filenames_exist(source_dir, target_dir):
                 tablefmt="simple",
             )
         )
+        if to_csv:
+            csv_filename = "source_missing_files.csv"
+            save_to_csv(missing_in_source_with_path, csv_filename)
+            print(
+                f"\nCSV file '{csv_filename}' containing missing files information has been saved to current directory."
+            )
 
 
 if __name__ == "__main__":
@@ -61,6 +85,11 @@ if __name__ == "__main__":
     )
     parser.add_argument("source_directory", type=Path, help="Source path")
     parser.add_argument("target_directory", type=Path, help="Proxy path")
+    parser.add_argument(
+        "-csv",
+        action="store_true",
+        help="Output missing files information to a CSV file",
+    )
     args = parser.parse_args()
 
-    check_filenames_exist(args.source_directory, args.target_directory)
+    check_filenames_exist(args.source_directory, args.target_directory, args.csv)
