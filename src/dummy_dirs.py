@@ -10,21 +10,16 @@ from pathlib import Path
 
 
 def create_dummy_folders(original_dir, dummy_dir):
-    for root, dirs, files in os.walk(original_dir):
-        # Create corresponding directories in the dummy directory
-        relative_path = os.path.relpath(root, original_dir)
-        dummy_subdir = os.path.join(dummy_dir, relative_path)
-        os.makedirs(dummy_subdir, exist_ok=True)
+    for source_path in Path(original_dir).rglob("*"):
+        relative_path = source_path.relative_to(original_dir)
+        dummy_path = Path(dummy_dir, relative_path)
+        dummy_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Create empty files for real files encountered
-        for file in files:
-            original_file_path = os.path.join(root, file)
-            dummy_file_path = os.path.join(dummy_subdir, file)
-            # If it's a real file, touch it
-            if os.path.isfile(original_file_path):
-                open(dummy_file_path, "a").close()  # Create empty file
-                os.utime(dummy_file_path, None)  # Update modification time
-                os.chmod(dummy_file_path, 0o644)  # Set permissions to rw-r--r--
+        if source_path.is_file():
+            dummy_path.touch()
+            st = source_path.stat()
+            os.utime(dummy_path, (st.st_atime, st.st_mtime))
+            os.chmod(dummy_path, st.st_mode & 0o777)
 
 
 if __name__ == "__main__":
