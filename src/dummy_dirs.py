@@ -1,7 +1,8 @@
 """
 Create dummy directories to mimic the structure and files of another directory. Create
 puppet directory to mimic the structure and files of another directory (source
-directory). The files are all 0 bytes and the original suffix will be retained.
+directory). The files are all 0 bytes, the original suffix and modification time will be
+retained.
 """
 
 import argparse
