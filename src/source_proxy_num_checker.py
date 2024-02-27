@@ -45,12 +45,8 @@ def check_filenames_exist(source_dir: str, target_dir: str, to_csv=False) -> Non
     missing_in_source = set(target_dict.keys()) - set(source_dict.keys())
 
     if missing_in_target:
-        missing_in_target_with_path = [
-            (filename, source_dict[filename]) for filename in missing_in_target
-        ]
-        print(
-            f"{RED}The following files are {BOLD}missing in the proxy directory:{RESET}\n"
-        )
+        missing_in_target_with_path = [(filename, source_dict[filename]) for filename in missing_in_target]  # fmt: off
+        print(f"{RED}The following files are {BOLD}missing in the proxy directory:{RESET}\n")  # fmt: off
         print(
             tabulate(
                 missing_in_target_with_path,
@@ -61,17 +57,11 @@ def check_filenames_exist(source_dir: str, target_dir: str, to_csv=False) -> Non
         if to_csv:
             csv_filename = "target_missing_files.csv"
             save_to_csv(missing_in_target_with_path, "target_missing_files.csv")
-            print(
-                f"\nCSV file '{csv_filename}' containing missing files information has been saved to current directory.\n"
-            )
+            print(f"\nCSV file '{csv_filename}' containing missing files information has been saved to current directory.\n")  # fmt: off
 
     if missing_in_source:
-        missing_in_source_with_path = [
-            (filename, target_dict[filename]) for filename in missing_in_source
-        ]
-        print(
-            f"{RED}The following files are present in the proxy directory but {BOLD}missing in the source directory:{RESET}\n"
-        )
+        missing_in_source_with_path = [(filename, target_dict[filename]) for filename in missing_in_source]  # fmt: off
+        print(f"{RED}The following files are present in the proxy directory but {BOLD}missing in the source directory:{RESET}\n")  # fmt: off
         print(
             tabulate(
                 missing_in_source_with_path,
@@ -82,9 +72,7 @@ def check_filenames_exist(source_dir: str, target_dir: str, to_csv=False) -> Non
         if to_csv:
             csv_filename = "source_missing_files.csv"
             save_to_csv(missing_in_source_with_path, csv_filename)
-            print(
-                f"\nCSV file '{csv_filename}' containing missing files information has been saved to current directory."
-            )
+            print(f"\nCSV file '{csv_filename}' containing missing files information has been saved to current directory.")  # fmt: off
 
 
 if __name__ == "__main__":
