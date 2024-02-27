@@ -9,7 +9,7 @@ from pathlib import Path
 
 from tabulate import tabulate
 
-VALID_EXT = ["MP4", "MOV", "MXF"]
+VALID_EXT = ["MP4", "MOV", "MXF", "RDC"]
 # ANSI escape code for red color
 RED = "\033[91m"
 # ANSI escape code for bold text
@@ -28,11 +28,7 @@ def save_to_csv(data: list, filename: str) -> None:
 def get_filenames_with_paths(directory: str) -> dict[str, str]:
     filenames_with_paths = {}
     for p in Path(directory).rglob("*"):
-        if (
-            p.is_file()
-            and p.suffix[1:].upper() in VALID_EXT
-            and not p.name.startswith("._")
-        ):
+        if p.suffix[1:].upper() in VALID_EXT and not p.name.startswith("._"):
             filenames_with_paths[p.stem] = str(p.resolve())
     return filenames_with_paths
 
