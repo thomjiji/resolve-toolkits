@@ -415,6 +415,7 @@ def main():
     p = Proxy(media_parent_path, proxy_parent_path)
 
     p.set_project_color_management()
+
     # Create bin in the media pool.
     media_fullpath_list = p.media_storage.GetSubFolderList(media_parent_path)
     p.create_bin(get_subfolders_name(media_fullpath_list))

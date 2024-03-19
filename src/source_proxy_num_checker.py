@@ -51,8 +51,8 @@ def check_filenames_exist(source_dir: str, target_dir: str, to_csv=False) -> Non
             )
         )
         if to_csv:
-            csv_filename = "target_missing_files.csv"
-            save_to_csv(missing_in_target_with_path, "target_missing_files.csv")
+            csv_filename = "proxy_missing_files.csv"
+            save_to_csv(missing_in_target_with_path, "proxy_missing_files.csv")
             print(f"\nCSV file '{csv_filename}' containing missing files information has been saved to current directory.\n")  # fmt: off
 
     if missing_in_source:
