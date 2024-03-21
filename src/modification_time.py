@@ -25,7 +25,7 @@ def get_file_modification_time(file_path):
 
 
 def main(file_paths_file, output_format):
-    with open(file_paths_file, "r") as file:
+    with open(file_paths_file, "r", encoding="utf-8") as file:
         file_lines = file.readlines()
 
     table_data = []
@@ -33,7 +33,7 @@ def main(file_paths_file, output_format):
     for line in file_lines:
         line = line.strip()
         if line.startswith("#"):
-            current_computer = line[1:].strip()  # Extract computer name
+            current_computer = line[1:].strip()
         elif line:
             project_name = get_project_name(line)
             prproj_name = get_prproj_name(line)
@@ -47,11 +47,14 @@ def main(file_paths_file, output_format):
                     [current_computer, project_name, prproj_name, "File not found"]
                 )
 
+    output_directory = os.path.dirname(file_paths_file)
+    output_file_path = os.path.join(output_directory, "project_modification_time.csv")
+
     if output_format == "csv":
-        with open("project_modification_time.csv", "w", newline="") as csvfile:
+        with open(output_file_path, "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(
-                ["Computer", "Project Name", "prproj Name", "Modification Time"]
+                ["Computer", "Project Name", "PRPROJ Name", "Modification Time"]
             )
             writer.writerows(table_data)
     else:
@@ -61,7 +64,7 @@ def main(file_paths_file, output_format):
                 headers=[
                     "Computer",
                     "Project Name",
-                    "prproj Name",
+                    "PRPROJ Name",
                     "Modification Time",
                 ],
                 tablefmt="grid",
