@@ -2,6 +2,7 @@ import os
 import time
 import argparse
 import csv
+import time
 from tabulate import tabulate
 
 
