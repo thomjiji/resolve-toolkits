@@ -1,13 +1,19 @@
-import os
-import time
 import argparse
 import csv
+import os
 import time
+
 from tabulate import tabulate
 
 
 def get_project_name(file_path):
-    return os.path.basename(os.path.dirname(os.path.dirname(file_path)))
+    parts = file_path.split(os.sep)
+    for i, part in enumerate(parts):
+        if part.startswith("Volumes"):
+            for j in range(i + 1, len(parts)):
+                if not parts[j].startswith(" "):
+                    return parts[j + 1]
+    return None
 
 
 def get_prproj_name(file_path):
