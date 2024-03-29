@@ -1,6 +1,14 @@
 import argparse
 import subprocess
+import logging
 from pathlib import Path
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 MOUNT_POINT = "/Users/thom/Desktop/remote-filesystem"
 
@@ -71,8 +79,42 @@ def mount_smbfs(drives: dict, username: str, password: str) -> None:
         server_dir = Path(MOUNT_POINT) / server
         (server_dir / drive_name).mkdir(parents=True, exist_ok=True)
         encoded_drive_name = replace_special_characters(drive_name)
+
+        logging.info(f"Connecting to server {server}...")
+
         command = f'mount_smbfs -f 0755 -d 0755 //{username}:{password}@{server}/{encoded_drive_name} "{server_dir / drive_name}"'
-        subprocess.run(command, shell=True)
+        result = subprocess.run(command, shell=True, capture_output=True)
+
+        if result.returncode == 0:
+            logging.info(f"Successfully connected to server {server}.")
+        else:
+            logging.error(
+                f"Failed to connect to server {server}. \n\tError: {result.stderr.decode('utf-8')}"
+            )
+
+
+def umount_smbfs(drives: dict) -> None:
+    """
+    Unmount all mounted SMB drives.
+
+    Parameters
+    ----------
+    drives
+        A dictionary mapping server names to their corresponding drive names.
+    """
+    for server, drive_name in drives.items():
+        server_dir = Path(MOUNT_POINT) / server
+        command = f'umount "{server_dir / drive_name}"'
+        result = subprocess.run(command, shell=True, capture_output=True)
+
+        if result.returncode == 0:
+            logging.info(
+                f"Successfully unmounted drive {drive_name} from server {server}."
+            )
+        else:
+            logging.error(
+                f"Failed to unmount drive {drive_name} from server {server}. \n\tError: {result.stderr.decode('utf-8')}"
+            )
 
 
 if __name__ == "__main__":
@@ -98,7 +140,16 @@ if __name__ == "__main__":
         help="Password for accessing the SMB drives.",
         required=True,
     )
+    parser.add_argument(
+        "-um",
+        "--umount_all",
+        action="store_true",
+        help="Unmount all mounted SMB drives.",
+    )
     args = parser.parse_args()
-
     drives = extract_drive_and_server(args.file_path)
-    mount_smbfs(drives, args.username, args.password)
+
+    if args.umount_all:
+        umount_smbfs(drives)
+    else:
+        mount_smbfs(drives, args.username, args.password)
