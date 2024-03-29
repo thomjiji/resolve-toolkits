@@ -57,7 +57,7 @@ def extract_drive_and_server(file_path: str) -> dict:
             else:
                 parts = line.strip().split("/")
                 if len(parts) >= 2:
-                    drive_name = parts[2]
+                    drive_name = parts[6]
                     drives[current_server] = drive_name
     return drives
 
