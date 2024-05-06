@@ -3,7 +3,6 @@ import subprocess
 import logging
 from pathlib import Path
 
-# Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -62,7 +61,9 @@ def extract_drive_and_server(file_path: str) -> dict:
     return drives
 
 
-def mount_smbfs(drives: dict, username: str, password: str) -> None:
+def mount_smbfs(
+    drives: dict, username: str, password: str, server: str = "", drive: str = ""
+) -> None:
     """
     Mount SMB drives based on the provided drive and server information.
 
@@ -74,23 +75,47 @@ def mount_smbfs(drives: dict, username: str, password: str) -> None:
         Username for accessing the SMB drives.
     password
         Password for accessing the SMB drives.
+    server
+        Server name (optional) to mount a specific drive.
+    drive
+        Drive name (optional) to mount a specific drive.
     """
-    for server, drive_name in drives.items():
-        server_dir = Path(MOUNT_POINT) / server
-        (server_dir / drive_name).mkdir(parents=True, exist_ok=True)
-        encoded_drive_name = replace_special_characters(drive_name)
+    if server and drive:
+        if server.lower() in drives and drives[server] == drive.lower:
+            server_dir = Path(MOUNT_POINT) / server
+            (server_dir / drive).mkdir(parents=True, exist_ok=True)
+            encoded_drive_name = replace_special_characters(drive)
 
-        logging.info(f"Connecting to server {server}...")
+            logging.info(f"Connecting to server {server}...")
 
-        command = f'mount_smbfs -f 0755 -d 0755 //{username}:{password}@{server}/{encoded_drive_name} "{server_dir / drive_name}"'
-        result = subprocess.run(command, shell=True, capture_output=True)
+            command = f'mount_smbfs -f 0755 -d 0755 //{username}:{password}@{server}/{encoded_drive_name} "{server_dir / drive}"'
+            result = subprocess.run(command, shell=True, capture_output=True)
 
-        if result.returncode == 0:
-            logging.info(f"Successfully connected to server {server}.")
+            if result.returncode == 0:
+                logging.info(f"Successfully connected to server {server}.")
+            else:
+                logging.error(
+                    f"Failed to connect to server {server}. \n\tError: {result.stderr.decode('utf-8')}"
+                )
         else:
-            logging.error(
-                f"Failed to connect to server {server}. \n\tError: {result.stderr.decode('utf-8')}"
-            )
+            logging.error("The specified server and drive combination does not exist.")
+    else:
+        for server, drive_name in drives.items():
+            server_dir = Path(MOUNT_POINT) / server
+            (server_dir / drive_name).mkdir(parents=True, exist_ok=True)
+            encoded_drive_name = replace_special_characters(drive_name)
+
+            logging.info(f"Connecting to server {server}...")
+
+            command = f'mount_smbfs -f 0755 -d 0755 //{username}:{password}@{server}/{encoded_drive_name} "{server_dir / drive_name}"'
+            result = subprocess.run(command, shell=True, capture_output=True)
+
+            if result.returncode == 0:
+                logging.info(f"Successfully connected to server {server}.")
+            else:
+                logging.error(
+                    f"Failed to connect to server {server}. \n\tError: {result.stderr.decode('utf-8')}"
+                )
 
 
 def umount_smbfs(drives: dict) -> None:
@@ -146,10 +171,20 @@ if __name__ == "__main__":
         action="store_true",
         help="Unmount all mounted SMB drives.",
     )
+    parser.add_argument(
+        "-d",
+        "--drive",
+        type=str,
+        help="Mount a specific drive by specifying server name and drive name. Format: SERVER:DRIVE.",
+    )
     args = parser.parse_args()
+
     drives = extract_drive_and_server(args.file_path)
 
     if args.umount_all:
         umount_smbfs(drives)
+    elif args.drive:
+        server, drive = args.drive.split(":")
+        mount_smbfs(drives, args.username, args.password, server, drive)
     else:
         mount_smbfs(drives, args.username, args.password)
