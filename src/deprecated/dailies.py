@@ -7,7 +7,7 @@ import re
 import sys
 from typing import AnyStr, Iterable
 
-from resolve import BaseResolve
+from deprecated.resolve import BaseResolve
 
 INVALID_EXTENSION = ["DS_Store", "JPG", "JPEG", "SRT"]
 

@@ -6,8 +6,8 @@ import os
 import re
 import sys
 
-from dailies import Proxy, get_sorted_path
-from resolve import Resolve
+from deprecated.dailies import Proxy, get_sorted_path
+from deprecated.resolve import Resolve
 
 DROP_FRAME_FPS = [23.98, 29.97, 59.94, 119.88]
 
