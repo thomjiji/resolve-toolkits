@@ -118,7 +118,7 @@ def umount_smbfs(drives: dict) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Mount SMB drives from a text file.")
+    parser = argparse.ArgumentParser(description="Mount multiple SMB drives at once.")
     parser.add_argument(
         "-i",
         "--file_path",
