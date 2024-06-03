@@ -1,9 +1,10 @@
 """
 To know which clip is using remote version, find them and copy remote to local
-to lock the image once it's approved by the client.
+(manually) to lock the image once it's approved by the client.
 """
 
 import argparse
+from tabulate import tabulate
 from dri.color_group import TimelineItem
 from dri.resolve import Resolve
 
@@ -23,10 +24,25 @@ def main() -> None:
         "video", 1
     )
 
-    # Iterate over clips and check if they have remote version enabled
+    # Collect clips data
+    clips_data = []
     for i, clip in enumerate(clips_in_timeline):
-        if clip.GetCurrentVersion().get("versionType") == 1:
-            print(f"clip {i+1} has remote version enabled.")
+        current_version = clip.GetCurrentVersion()
+        if current_version.get("versionType") == 1:
+            clips_data.append(
+                [i + 1, clip.GetName(), current_version.get("versionName")]
+            )
+
+    # Print the table
+    if clips_data:
+        print(
+            f'The following clips have remote version enabled in timeline "{current_timeline.GetName()}":\n\n'
+            f'{tabulate( clips_data, headers=["Clip Number", "Clip Name", "Version Name"], tablefmt="simple")}'
+        )
+    else:
+        print(
+            f'No clips with remote version enabled found in timeline "{current_timeline.GetName()}".'
+        )
 
 
 if __name__ == "__main__":
