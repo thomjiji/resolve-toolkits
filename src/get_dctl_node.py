@@ -52,7 +52,7 @@ def check_clips_for_dctl():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Script to check clips in track 2 of current timeline for DCTL tool usage."
+        description="Script to check clips in track 1 of current timeline for DCTL tool usage."
     )
     args = parser.parse_args()
     check_clips_for_dctl()
