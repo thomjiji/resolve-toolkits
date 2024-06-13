@@ -4,9 +4,9 @@ To know which clip is using remote version, find them and copy remote to local
 """
 
 import argparse
+
+from dri import Resolve, TimelineItem
 from tabulate import tabulate
-from dri.color_group import TimelineItem
-from dri.resolve import Resolve
 
 
 def main() -> None:

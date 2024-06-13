@@ -1,6 +1,7 @@
 import argparse
+
+from dri import Resolve
 from tabulate import tabulate
-from dri.resolve import Resolve
 
 
 def check_clips_for_dctl():
