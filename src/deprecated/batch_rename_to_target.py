@@ -1,6 +1,10 @@
+"""
+Really slow, don't use.
+"""
+
 import argparse
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 
 def is_hidden_file(filename):
