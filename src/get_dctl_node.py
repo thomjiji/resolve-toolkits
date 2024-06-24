@@ -21,28 +21,31 @@ def check_clips_for_dctl():
         num_of_nodes = node_graph.GetNumNodes()
 
         # Keep track of DCTL nodes for each clip
-        dctl_nodes = set()
+        dctl_nodes = []
 
         # Check each node for the presence of the "DCTL" tool
         for node_index in range(1, num_of_nodes + 1):
             tools_in_node = node_graph.GetToolsInNode(node_index)
-
             if tools_in_node is None:
                 continue
-
             # Check if "OFX: DCTL" tool is in the current node
             if any("OFX: DCTL" in tool for tool in tools_in_node):
-                dctl_nodes.add(node_index)
+                node_label = node_graph.GetNodeLabel(node_index)
+                dctl_nodes.append((node_index, node_label))
 
-        # Add the clip data with DCTL nodes
+        # Sort the DCTL nodes by node index
+        dctl_nodes.sort()
+
+        # Add the clip data with sorted DCTL nodes
         if dctl_nodes:
-            sorted_dctl_nodes = sorted(dctl_nodes)
-            clips_data.append([i + 1, timeline_item.GetName(), sorted_dctl_nodes])
+            node_indices = [node_index for node_index, _ in dctl_nodes]
+            node_labels = [node_label for _, node_label in dctl_nodes]
+            clips_data.append([i + 1, timeline_item.GetName(), node_indices, node_labels])
 
     if clips_data:
         print(
             f'The following clips in timeline "{current_timeline.GetName()}" have DCTL tool used:\n\n'
-            f'{tabulate(clips_data, headers=["Clip Number", "Clip Name", "Node Index"], tablefmt="simple")}'
+            f'{tabulate(clips_data, headers=["Clip Number", "Clip Name", "Node Index", "Node Label"], tablefmt="simple")}'
         )
     else:
         print(
