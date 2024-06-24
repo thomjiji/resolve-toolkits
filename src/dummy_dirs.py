@@ -1,4 +1,7 @@
 """
+Don't use this script (it's slow), use Rsync instead: `rsync -avPih --include '*/'
+--exclude '*' videos/ ~/Desktop/videos-dummy/`.
+
 Create dummy directories to mimic the structure and files of another directory. Create
 puppet directory to mimic the structure and files of another directory (source
 directory). The files are all 0 bytes, the original suffix and modification time will be
@@ -31,4 +34,4 @@ if __name__ == "__main__":
     parser.add_argument("dummy", type=Path, help="Create dummy directories to")
     args = parser.parse_args()
 
-    create_dummy_folders(args.source, args.dummy)
+    # create_dummy_folders(args.source, args.dummy)
