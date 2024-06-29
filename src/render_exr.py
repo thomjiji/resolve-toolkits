@@ -38,9 +38,9 @@ def add_render_jobs(project, timeline, blue_markers, target_dir, render_preset):
         project.SetRenderSettings(
             {
                 "TargetDir": target_dir,
-                "CustomName": f"{clip_name}_{frame}",
-                "ResolutionWidth": timeline.GetSetting("timelineResolutionWidth"),
-                "ResolutionHeight": timeline.GetSetting("timelineResolutionHeight"),
+                "CustomName": f"{clip_name}_",
+                "FormatWidth": timeline.GetSetting("timelineResolutionWidth"),
+                "FormatHeight": timeline.GetSetting("timelineResolutionHeight"),
                 "MarkIn": frame,
                 "MarkOut": frame,
             }
