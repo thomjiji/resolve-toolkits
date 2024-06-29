@@ -1,4 +1,3 @@
 tabulate
-csv
-dri=^0.0.2
+dri==^0.0.2
 dftt_timecode
