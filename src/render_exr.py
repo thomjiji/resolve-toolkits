@@ -34,7 +34,10 @@ def add_render_jobs(project, timeline, blue_markers, target_dir, render_preset):
     for frame in blue_markers:
         clip_name = get_clip_name_at_frame(timeline, frame)
 
-        project.LoadRenderPreset(render_preset)
+        if not project.LoadRenderPreset(render_preset):
+            raise ValueError(
+                f"Failed to load render preset: {render_preset}. Is this render preset exist?"
+            )
         project.SetRenderSettings(
             {
                 "TargetDir": target_dir,
@@ -55,10 +58,8 @@ def main(target_dir, render_preset):
     project_manager = resolve.GetProjectManager()
     project = project_manager.GetCurrentProject()
     current_timeline = project.GetCurrentTimeline()
-    # fps = float(
-    #     current_timeline.GetSetting("timelineFrameRate").get("timelineFrameRate")
-    # )
     timeline_fps_setting = current_timeline.GetSetting("timelineFrameRate")
+
     if isinstance(timeline_fps_setting, float):
         fps = timeline_fps_setting
     else:
@@ -70,12 +71,45 @@ def main(target_dir, render_preset):
     start_frames = convert_smpte_to_frames(start_timecode, fps)
     blue_markers = get_blue_markers(current_timeline, start_frames)
 
+    # Remember current timeline settings
+    original_settings = {
+        "colorScienceMode": current_timeline.GetSetting("colorScienceMode"),
+        "colorAcesODT": current_timeline.GetSetting("colorAcesODT"),
+        "colorAcesGamutCompressType": current_timeline.GetSetting(
+            "colorAcesGamutCompressType"
+        ),
+        "colorSpaceOutput": current_timeline.GetSetting("colorSpaceOutput"),
+        "colorSpaceOutputGamutLimit": current_timeline.GetSetting(
+            "colorSpaceOutputGamutLimit"
+        ),
+        "colorSpaceTimeline": current_timeline.GetSetting("colorSpaceTimeline"),
+        "inputDRT": current_timeline.GetSetting("inputDRT"),
+        "outputDRT": current_timeline.GetSetting("outputDRT"),
+        "useCATransform": current_timeline.GetSetting("useCATransform"),
+    }
+
+    print(original_settings)
+
+    # Check if current timeline is color managed by ACES
+    if original_settings["colorScienceMode"] != "acescct":
+        current_timeline.SetSetting("colorScienceMode", "acescct")
+
+    # Set additional settings for ACES
+    current_timeline.SetSetting("colorAcesODT", "No Output Transform")
+    current_timeline.SetSetting("colorAcesGamutCompressType", "None")
+
     job_ids = add_render_jobs(
         project, current_timeline, blue_markers, target_dir, render_preset
     )
 
     if job_ids:
         project.StartRendering(job_ids)
+
+    for key, value in original_settings.items():
+        if current_timeline.SetSetting(key, value):
+            print(f"Restored {key} to {value}.")
+        else:
+            print(f"Failed to restore {key}.")
 
 
 if __name__ == "__main__":
