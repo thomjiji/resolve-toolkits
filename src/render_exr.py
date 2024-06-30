@@ -112,9 +112,9 @@ def main(target_dir, render_preset):
 
     for key, value in original_settings.items():
         if current_timeline.SetSetting(key, value):
-            print(f"Restored {key} to {value}.")
+            print(f'Restored "{key}" to "{value}".')
         else:
-            print(f"Failed to restore {key}.")
+            print(f'Failed to restore "{key}".')
 
 
 if __name__ == "__main__":
