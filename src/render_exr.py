@@ -1,6 +1,7 @@
 import argparse
 from dri import Resolve
 from dftt_timecode import DfttTimecode
+import time
 
 
 def convert_smpte_to_frames(timecode, fps):
@@ -34,6 +35,7 @@ def add_render_jobs(project, timeline, blue_markers, target_dir, render_preset):
     for frame in blue_markers:
         clip_name = get_clip_name_at_frame(timeline, frame)
 
+        # TODO: move this check upstream, otherwise the render preset doesn't load on, but the timeline params are modified.
         if not project.LoadRenderPreset(render_preset):
             raise ValueError(
                 f"Failed to load render preset: {render_preset}. Is this render preset exist?"
@@ -102,6 +104,11 @@ def main(target_dir, render_preset):
 
     if job_ids:
         project.StartRendering(job_ids)
+        while any(
+            project.GetRenderJobStatus(job_id)["JobStatus"] == "Rendering"
+            for job_id in job_ids
+        ):
+            time.sleep(1)  # Wait for rendering to complete
 
     for key, value in original_settings.items():
         if current_timeline.SetSetting(key, value):
