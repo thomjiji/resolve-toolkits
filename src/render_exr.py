@@ -88,8 +88,6 @@ def main(target_dir, render_preset):
         "useCATransform": current_timeline.GetSetting("useCATransform"),
     }
 
-    print(original_settings)
-
     # Check if current timeline is color managed by ACES
     if original_settings["colorScienceMode"] != "acescct":
         current_timeline.SetSetting("colorScienceMode", "acescct")
