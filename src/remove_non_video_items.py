@@ -14,7 +14,7 @@ from dri import Resolve
 
 
 def remove_non_video_clips(folder):
-    items_to_be_deleted = []
+    items_to_be_removed = []
 
     for clip in folder.GetClipList():
         clip_name = clip.GetName()
@@ -26,24 +26,24 @@ def remove_non_video_clips(folder):
             and not clip_name.endswith(".exr")
             and not is_timeline
         ):
-            items_to_be_deleted.append(clip)
+            items_to_be_removed.append(clip)
 
-    if items_to_be_deleted:
-        print(f"Deleting clips in {folder.GetName()}")
-        media_pool.DeleteClips(items_to_be_deleted)
+    if items_to_be_removed:
+        print(f"Removing non video items in {folder.GetName()}")
+        media_pool.DeleteClips(items_to_be_removed)
 
     for subfolder in folder.GetSubFolderList():
         remove_non_video_clips(subfolder)
 
 
-def remove_empty_subfolders(folder):
+def remove_empty_subfolders(folder, recursive=False):
     subfolders = folder.GetSubFolderList()
 
     for subfolder in subfolders:
-        remove_empty_subfolders(subfolder)
+        remove_empty_subfolders(subfolder, recursive)
 
     if not folder.GetSubFolderList() and not folder.GetClipList():
-        print(f"Deleting folder {folder.GetName()}")
+        print(f"Removing bin {folder.GetName()}")
         media_pool.DeleteFolders([folder])
 
 
@@ -54,7 +54,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--remove-empty",
         action="store_true",
-        help="Remove empty subfolders after removing clips.",
+        help="Remove empty subfolders under the current folder.",
+    )
+    parser.add_argument(
+        "--remove-all-empty",
+        action="store_true",
+        help="Remove all empty subfolders recursively, including in subfolders of the current folder.",
     )
     args = parser.parse_args()
 
@@ -63,8 +68,13 @@ if __name__ == "__main__":
     project = project_manager.GetCurrentProject()
     media_pool = project.GetMediaPool()
     root_folder = media_pool.GetRootFolder()
+    current_folder = media_pool.GetCurrentFolder()
 
-    remove_non_video_clips(root_folder)
+    # Default behavior: Remove non-video clips
+    remove_non_video_clips(current_folder)
 
-    if args.remove_empty:
-        remove_empty_subfolders(root_folder)
+    # Remove empty folders based on user input
+    if args.remove_all_empty:
+        remove_empty_subfolders(root_folder, recursive=True)
+    elif args.remove_empty:
+        remove_empty_subfolders(current_folder, recursive=False)
