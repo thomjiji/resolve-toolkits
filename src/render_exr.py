@@ -60,17 +60,8 @@ def main(target_dir, render_preset):
     project_manager = resolve.GetProjectManager()
     project = project_manager.GetCurrentProject()
     current_timeline = project.GetCurrentTimeline()
-    timeline_fps_setting = current_timeline.GetSetting("timelineFrameRate")
 
-    if isinstance(timeline_fps_setting, float):
-        fps = timeline_fps_setting
-    else:
-        raise TypeError(
-            f"Unexpected type for timelineFrameRate: {type(timeline_fps_setting)}"
-        )
-
-    start_timecode = current_timeline.GetStartTimecode()
-    start_frames = convert_smpte_to_frames(start_timecode, fps)
+    start_frames = current_timeline.GetStartFrame()
     blue_markers = get_blue_markers(current_timeline, start_frames)
 
     # Remember current timeline settings
