@@ -1,7 +1,8 @@
 import argparse
-from dri import Resolve
-from dftt_timecode import DfttTimecode
 import time
+
+from dftt_timecode import DfttTimecode
+from dri import Resolve
 
 
 def convert_smpte_to_frames(timecode, fps):
