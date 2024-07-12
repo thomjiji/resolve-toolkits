@@ -87,9 +87,11 @@ def main(target_dir, render_preset):
     if original_settings["useCustomSettings"] == "0":
         project_res_width = project.GetSetting("timelineResolutionWidth")
         project_res_height = project.GetSetting("timelineResolutionHeight")
+        project_fps = project.GetSetting("timelineFrameRate")
         current_timeline.SetSetting("useCustomSettings", "1")
         current_timeline.SetSetting("timelineResolutionWidth", project_res_width)
         current_timeline.SetSetting("timelineResolutionHeight", project_res_height)
+        current_timeline.SetSetting("timelineFrameRate", project_fps)
 
     # Check if current timeline is color managed by ACES
     if original_settings["colorScienceMode"] != "acescct":
