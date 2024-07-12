@@ -67,6 +67,7 @@ def main(target_dir, render_preset):
 
     # Remember current timeline settings
     original_settings = {
+        "useCustomSettings": current_timeline.GetSetting("useCustomSettings"),
         "colorScienceMode": current_timeline.GetSetting("colorScienceMode"),
         "colorAcesODT": current_timeline.GetSetting("colorAcesODT"),
         "colorAcesGamutCompressType": current_timeline.GetSetting(
@@ -81,6 +82,14 @@ def main(target_dir, render_preset):
         "outputDRT": current_timeline.GetSetting("outputDRT"),
         "useCATransform": current_timeline.GetSetting("useCATransform"),
     }
+
+    # Check if current timeline is under project level color management (it means `current_timeline.GetSetting("useCustomSettings") == "0"`).
+    if original_settings["useCustomSettings"] == "0":
+        project_res_width = project.GetSetting("timelineResolutionWidth")
+        project_res_height = project.GetSetting("timelineResolutionHeight")
+        current_timeline.SetSetting("useCustomSettings", "1")
+        current_timeline.SetSetting("timelineResolutionWidth", project_res_width)
+        current_timeline.SetSetting("timelineResolutionHeight", project_res_height)
 
     # Check if current timeline is color managed by ACES
     if original_settings["colorScienceMode"] != "acescct":
@@ -103,6 +112,12 @@ def main(target_dir, render_preset):
             time.sleep(1)  # Wait for rendering to complete
 
     for key, value in original_settings.items():
+        if original_settings["useCustomSettings"] == "0":
+            current_timeline.SetSetting("useCustomSettings", "0")
+            print(
+                'Restored original timeline color management settings (by simply toggle the button "Use Project Settings")'
+            )
+            break
         if current_timeline.SetSetting(key, value):
             print(f'Restored "{key}" to "{value}".')
         else:
