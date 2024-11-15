@@ -113,6 +113,7 @@ def main(target_dir, render_preset):
         ):
             time.sleep(1)  # Wait for rendering to complete
 
+    # Restoring original timeline settings
     for key, value in original_settings.items():
         if original_settings["useCustomSettings"] == "0":
             current_timeline.SetSetting("useCustomSettings", "0")
@@ -130,7 +131,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Render frames as EXR from blue markers in DaVinci Resolve."
     )
-    parser.add_argument("target_dir", help="The target directory for rendered files.")
+    parser.add_argument("target_dir", help="The target directory for rendered exrs.")
     parser.add_argument(
         "render_preset", help="The name of the EXR render preset to use."
     )
