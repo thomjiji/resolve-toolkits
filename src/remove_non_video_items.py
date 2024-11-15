@@ -1,12 +1,6 @@
 """
 This script removes non-video clips from the media pool in DaVinci Resolve
 and optionally removes empty subfolders.
-
-Usage:
-    python remove_non_video_items.py [--remove-empty]
-
-Options:
-    --remove-empty   Remove empty subfolders after removing non-video clips.
 """
 
 import argparse
@@ -45,6 +39,9 @@ def remove_empty_subfolders(folder, recursive=False):
     if not folder.GetSubFolderList() and not folder.GetClipList():
         print(f"Removing bin {folder.GetName()}")
         media_pool.DeleteFolders([folder])
+    elif folder.GetName() == "SUB":
+        print(f"Removing SUB bin {folder.GetName()}")
+        media_pool.DeleteFolders([folder])
 
 
 if __name__ == "__main__":
@@ -57,7 +54,7 @@ if __name__ == "__main__":
         help="Remove empty subfolders under the current folder.",
     )
     parser.add_argument(
-        "--remove-all-empty",
+        "--remove-all-empty-bin",
         action="store_true",
         help="Remove all empty subfolders recursively, including in subfolders of the current folder.",
     )
@@ -70,11 +67,11 @@ if __name__ == "__main__":
     root_folder = media_pool.GetRootFolder()
     current_folder = media_pool.GetCurrentFolder()
 
-    # Default behavior: Remove non-video clips
+    # Default behavior: Remove non-video items
     remove_non_video_clips(current_folder)
 
-    # Remove empty folders based on user input
-    if args.remove_all_empty:
+    # Optionally remove empty folders if user explicitly request.
+    if args.remove_all_empty_bin:
         remove_empty_subfolders(root_folder, recursive=True)
-    elif args.remove_empty:
+    elif args.remove_empty_bin:
         remove_empty_subfolders(current_folder, recursive=False)
