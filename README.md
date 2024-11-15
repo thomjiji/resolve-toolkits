@@ -31,3 +31,10 @@ The following clips in timeline "main" have DCTL tool used:
 ```
 
 To make the script work better, **please label all DCTL nodes (at least the ones that use the DCTL tool)**. If not, you can see that the node label column above outputs useless '' strings, so much so that even after running this script (to get which DCTL is used for which node), you still don't know which DCTL is used here.
+
+---
+
+Based on the current implementation of `render_exr.py`, here's what the user needs to do before running it:
+
+1. Add the marker on the current timeline (Blue marker only).
+2. Go to the Color Page and manually convert the current clip color space to ACES AP0/Linear. `render_exr.py` will automatically set the timeline to the desired settings.
