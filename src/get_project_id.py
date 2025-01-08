@@ -1,3 +1,15 @@
+"""
+Fetch DaVinci Resolve project unique IDs (by simply opening every project and close it
+immediately to retrieve its unique ID) and save to CSV.
+
+Notice:
+1. Since we need to open each project, so it's really slow...
+2. User should enter the correspond folder that this script should iterate over
+   manually. If not, script will start from the root folder.
+3. Legacy projects may encounter error (such like plugin non-available, DCTL missing,
+   etc), user should notice and click the popup window to let it go.
+"""
+
 import argparse
 import csv
 import sys
