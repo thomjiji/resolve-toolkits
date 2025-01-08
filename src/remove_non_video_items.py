@@ -49,7 +49,7 @@ if __name__ == "__main__":
         description="Remove non-video clips and optionally empty subfolders."
     )
     parser.add_argument(
-        "--remove-empty",
+        "--remove-empty-bin",
         action="store_true",
         help="Remove empty subfolders under the current folder.",
     )
