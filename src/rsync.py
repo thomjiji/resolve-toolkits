@@ -2,13 +2,10 @@
 
 import argparse
 import subprocess
+from pathlib import Path
 
 # Changeable parameters
-EXCLUSIONS = [
-    ".DS_Store",
-    "_gsdata_",
-    ".*",
-]
+EXCLUSIONS = [".DS_Store", "_gsdata_", ".*"]
 
 RSYNC_OPTIONS = [
     "-a",  # archive mode; equals -rlptgoD (no -H)
@@ -40,6 +37,16 @@ def build_rsync_cmd(action):
 
 # Function to execute rsync
 def execute_rsync(source, target, action):
+    # Colorize paths using ANSI escape codes
+    source_colored = f"\033[94m{source}\033[0m"  # Blue
+    target_colored = f"\033[92m{target}\033[0m"  # Green
+    print(
+        f"Synchronizing from '{source_colored}' to '{target_colored}' (action: {action})"
+    )
+
+    source_path = Path(source)
+    if source_path.is_dir():
+        source = str(source_path) + "/"
     cmd = build_rsync_cmd(action)
     cmd.append(source)
     cmd.append(target)
@@ -65,12 +72,21 @@ def main():
         default="dry-run",
         help="Specify 'run' to perform the actual rsync with verbose output. Omit or use any other value for a dry run.",
     )
+    parser.add_argument(
+        "--swap",
+        action="store_true",
+        help="Swap source and target to verify synchronization in the reverse direction.",
+    )
 
     # Parse arguments
     args = parser.parse_args()
 
+    # Swap source and target if --swap is provided
+    source = args.target if args.swap else args.source
+    target = args.source if args.swap else args.target
+
     # Execute rsync
-    execute_rsync(args.source, args.target, args.action)
+    execute_rsync(source, target, args.action)
 
 
 if __name__ == "__main__":
