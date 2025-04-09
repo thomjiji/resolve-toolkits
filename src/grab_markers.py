@@ -1,5 +1,5 @@
 import argparse
-from pprint import pprint
+import logging
 
 from dri import Resolve
 
@@ -11,69 +11,102 @@ media_pool = project.GetMediaPool()
 root_folder = media_pool.GetRootFolder()
 current_timeline = project.GetCurrentTimeline()
 
+# Define the list of valid colors (capitalized)
+VALID_COLORS = [
+    "All",
+    "Blue",
+    "Cyan",
+    "Green",
+    "Yellow",
+    "Red",
+    "Pink",
+    "Purple",
+    "Fuchsia",
+    "Rose",
+    "Lavender",
+    "Sky",
+    "Mint",
+    "Lemon",
+    "Sand",
+    "Cocoa",
+    "Cream",
+]
+# Create a mapping from lowercase color name to capitalized color name
+VALID_COLORS_MAP = {c.lower(): c for c in VALID_COLORS}
 
-def main():
+
+def capitalized_color(color_str: str) -> str:
+    """
+    Argparse type function to validate and capitalize color input.
+    Allows case-insensitive input but returns the canonical capitalized form.
+    """
+    lower_color = color_str.lower()
+    if lower_color in VALID_COLORS_MAP:
+        return VALID_COLORS_MAP[lower_color]  # Return the capitalized version
+    raise argparse.ArgumentTypeError(
+        f"invalid color value: '{color_str}'. Choose from: {', '.join(VALID_COLORS)}"
+    )
+
+
+def main(selected_color: str):
+    # get start frame of crurent timeline
+    start_frame = current_timeline.GetStartFrame()
+    logging.info(f"Timeline start frame: {start_frame}")
+
+    # get all markers
+    markers = current_timeline.GetMarkers()
+    logging.debug(f"Found markers: {markers}")
+
+    # iterate through markers, filter by the specified color, calculate the actual frame
+    # position, and grab a still
+    processed_markers = 0
+    for timecode, marker_data in markers.items():
+        if selected_color == "All" or marker_data["color"] == selected_color:
+            # calculate the actual "Record Frame" in the DaVinci Resolve UI
+            record_frame = timecode + start_frame
+            logging.info(
+                f"Setting timecode to {record_frame} for '{marker_data['color']}' marker "
+                f"'{marker_data['name']}'"
+            )
+
+            # set timecode and grab still
+            current_timeline.SetCurrentTimecode(str(record_frame))
+            still = current_timeline.GrabStill()
+
+            if still:
+                logging.info(
+                    f"Grabbed still for '{marker_data['color']}' marker "
+                    f"'{marker_data['name']}' at timecode {record_frame}"
+                )
+                processed_markers += 1
+            else:
+                logging.warning(
+                    f"Failed to grab still for '{marker_data['color']}' marker "
+                    f"'{marker_data['name']}' at timecode {record_frame}"
+                )
+    logging.info(f"Finished processing. Grabbed {processed_markers} stills.")
+
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Grab stills for markers of a specific color from the current timeline."
     )
     parser.add_argument(
         "--color",
-        choices=[
-            "All",
-            "Blue",
-            "Cyan",
-            "Green",
-            "Yellow",
-            "Red",
-            "Pink",
-            "Purple",
-            "Fuchsia",
-            "Rose",
-            "Lavender",
-            "Sky",
-            "Mint",
-            "Lemon",
-            "Sand",
-            "Cocoa",
-            "Cream",
-        ],
+        type=capitalized_color,
         default="Blue",
-        help="Specify the color of the markers to grab. Use 'All' to grab all markers regardless of color.",
+        help=(
+            "Specify the color of the markers to grab (case-insensitive). "
+            f"Use 'All' to grab all markers. Choices: {', '.join(VALID_COLORS)}"
+        ),
     )
     args = parser.parse_args()
 
     selected_color = args.color
 
-    # 获取时间线的起始帧
-    start_frame = current_timeline.GetStartFrame()
-    print(f"Timeline start frame: {start_frame}")
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
 
-    # 获取所有的 markers
-    markers = current_timeline.GetMarkers()
-    pprint(markers)
-
-    # 遍历 markers，筛选指定颜色的 marker，计算实际帧位置并抓取静帧
-    for timecode, marker_data in markers.items():
-        if selected_color == "All" or marker_data["color"] == selected_color:
-            # 计算实际帧位置
-            adjusted_timecode = timecode + start_frame
-            print(
-                f"Setting timecode to {adjusted_timecode} for {marker_data['color']} marker '{marker_data['name']}'"
-            )
-
-            # 移动播放头并抓取静帧
-            current_timeline.SetCurrentTimecode(str(adjusted_timecode))
-            still = current_timeline.GrabStill()
-
-            if still:
-                print(
-                    f"Grabbed still for {marker_data['color']} marker '{marker_data['name']}' at timecode {adjusted_timecode}"
-                )
-            else:
-                print(
-                    f"Failed to grab still for {marker_data['color']} marker '{marker_data['name']}' at timecode {adjusted_timecode}"
-                )
-
-
-if __name__ == "__main__":
-    main()
+    main(selected_color)
