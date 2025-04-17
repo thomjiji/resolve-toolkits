@@ -1,9 +1,18 @@
 import argparse
 import csv
+import logging
 from datetime import datetime
 from pathlib import Path
 
 from pymediainfo import MediaInfo
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 
 def extract_metadata(file_path: str) -> dict:
@@ -65,7 +74,7 @@ def process_clip_directory(clip_dir: str) -> None:
     clip_path = Path(clip_dir)
 
     if not clip_path.exists():
-        print(f"Error: Directory {clip_dir} does not exist")
+        logger.error(f"Directory {clip_dir} does not exist")
         return
 
     # Initialize list to store all metadata
@@ -73,26 +82,31 @@ def process_clip_directory(clip_dir: str) -> None:
 
     # Process only MP4 files in the directory
     for file_path in clip_path.glob("*.MP4"):
-        print(f"Processing file: {file_path.name}")
+        logger.info(f"Processing file: {file_path.name}")
         try:
             metadata = extract_metadata(str(file_path))
             all_metadata.append(metadata)
+            logger.debug(f"Successfully extracted metadata from {file_path.name}")
         except Exception as e:
-            print(f"Error processing {file_path.name}: {str(e)}")
+            logger.error(f"Error processing {file_path.name}: {str(e)}")
 
     # Save to CSV
     if all_metadata:
         output_file = f"metadata_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         fieldnames = all_metadata[0].keys()
 
-        with open(output_file, "w", newline="") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(all_metadata)
+        try:
+            with open(output_file, "w", newline="") as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(all_metadata)
 
-        print(f"\nMetadata has been saved to {output_file}")
+            logger.info(f"Successfully saved metadata to {output_file}")
+            logger.info(f"Processed {len(all_metadata)} files")
+        except Exception as e:
+            logger.error(f"Error saving CSV file: {str(e)}")
     else:
-        print("No MP4 files were found or no metadata was extracted.")
+        logger.warning("No MP4 files were found or no metadata was extracted.")
 
 
 def main() -> None:
@@ -104,8 +118,15 @@ def main() -> None:
     parser.add_argument(
         "--output", "-o", type=str, help="Custom output CSV filename (optional)"
     )
+    parser.add_argument(
+        "--debug", "-d", action="store_true", help="Enable debug logging"
+    )
 
     args = parser.parse_args()
+
+    # Set logging level based on debug flag
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
 
     process_clip_directory(args.input_path)
 
