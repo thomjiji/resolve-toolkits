@@ -1,3 +1,0 @@
-tabulate
-dri==^0.0.2
-dftt_timecode

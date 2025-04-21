@@ -3,13 +3,13 @@ import logging
 
 from dri import Resolve
 
-resolve = Resolve.resolve_init()
-project_manager = resolve.GetProjectManager()
-project = project_manager.GetCurrentProject()
-media_storage = resolve.GetMediaStorage()
-media_pool = project.GetMediaPool()
-root_folder = media_pool.GetRootFolder()
-current_timeline = project.GetCurrentTimeline()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger(__name__)
 
 # Define the list of valid colors (capitalized)
 VALID_COLORS = [
@@ -35,10 +35,54 @@ VALID_COLORS = [
 VALID_COLORS_MAP = {c.lower(): c for c in VALID_COLORS}
 
 
-def capitalized_color(color_str: str) -> str:
+def initialize_resolve() -> tuple:
+    """Initialize DaVinci Resolve API and get common objects.
+
+    Returns
+    -------
+    tuple
+        Tuple containing (resolve, project_manager, project, media_storage, 
+        media_pool, root_folder, current_timeline)
     """
-    Argparse type function to validate and capitalize color input.
-    Allows case-insensitive input but returns the canonical capitalized form.
+    resolve = Resolve.resolve_init()
+    project_manager = resolve.GetProjectManager()
+    project = project_manager.GetCurrentProject()
+    media_storage = resolve.GetMediaStorage()
+    media_pool = project.GetMediaPool()
+    root_folder = media_pool.GetRootFolder()
+    current_timeline = project.GetCurrentTimeline()
+
+    logger.info(f"Initialized Resolve with project: {project.GetName()}")
+    logger.info(f"Current timeline: {current_timeline.GetName()}")
+
+    return (
+        resolve, 
+        project_manager, 
+        project, 
+        media_storage, 
+        media_pool, 
+        root_folder, 
+        current_timeline
+    )
+
+
+def capitalized_color(color_str: str) -> str:
+    """Validate and capitalize color input.
+
+    Parameters
+    ----------
+    color_str : str
+        Input color string (case-insensitive)
+
+    Returns
+    -------
+    str
+        Capitalized color name from VALID_COLORS
+
+    Raises
+    ------
+    argparse.ArgumentTypeError
+        If the input color is not in VALID_COLORS
     """
     lower_color = color_str.lower()
     if lower_color in VALID_COLORS_MAP:
@@ -48,43 +92,62 @@ def capitalized_color(color_str: str) -> str:
     )
 
 
-def main(selected_color: str):
-    # get start frame of crurent timeline
+def main(selected_color: str) -> None:
+    """Process timeline markers of specified color and grab stills.
+
+    Parameters
+    ----------
+    selected_color : str
+        Color of markers to process (or 'All' for all markers)
+
+    Returns
+    -------
+    None
+    """
+    # Initialize Resolve API
+    _, _, _, _, _, _, current_timeline = initialize_resolve()
+
+    # Get start frame of current timeline
     start_frame = current_timeline.GetStartFrame()
-    logging.info(f"Timeline start frame: {start_frame}")
+    logger.info(f"Timeline start frame: {start_frame}")
 
-    # get all markers
+    # Get all markers
     markers = current_timeline.GetMarkers()
-    logging.debug(f"Found markers: {markers}")
+    logger.debug(f"Found markers: {markers}")
 
-    # iterate through markers, filter by the specified color, calculate the actual frame
+    if not markers:
+        logger.warning("No markers found in the timeline")
+        return
+
+    # Iterate through markers, filter by the specified color, calculate the actual frame
     # position, and grab a still
     processed_markers = 0
     for timecode, marker_data in markers.items():
         if selected_color == "All" or marker_data["color"] == selected_color:
-            # calculate the actual "Record Frame" in the DaVinci Resolve UI
+            # Calculate the actual "Record Frame" in the DaVinci Resolve UI
             record_frame = timecode + start_frame
-            logging.info(
+            logger.info(
                 f"Setting timecode to {record_frame} for '{marker_data['color']}' marker "
                 f"'{marker_data['name']}'"
             )
 
-            # set timecode and grab still
+            # Set timecode and grab still
             current_timeline.SetCurrentTimecode(str(record_frame))
             still = current_timeline.GrabStill()
 
             if still:
-                logging.info(
+                logger.info(
                     f"Grabbed still for '{marker_data['color']}' marker "
                     f"'{marker_data['name']}' at timecode {record_frame}"
                 )
                 processed_markers += 1
             else:
-                logging.warning(
+                logger.warning(
                     f"Failed to grab still for '{marker_data['color']}' marker "
                     f"'{marker_data['name']}' at timecode {record_frame}"
                 )
-    logging.info(f"Finished processing. Grabbed {processed_markers} stills.")
+
+    logger.info(f"Finished processing. Grabbed {processed_markers} stills.")
 
 
 if __name__ == "__main__":
@@ -100,13 +163,17 @@ if __name__ == "__main__":
             f"Use 'All' to grab all markers. Choices: {', '.join(VALID_COLORS)}"
         ),
     )
-    args = parser.parse_args()
-
-    selected_color = args.color
-
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    parser.add_argument(
+        "--debug", "-d", 
+        action="store_true", 
+        help="Enable debug logging"
     )
 
-    main(selected_color)
+    args = parser.parse_args()
+
+    # Set logging level based on debug flag
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+
+    logger.info(f"Starting grab_markers with color: {args.color}")
+    main(args.color)

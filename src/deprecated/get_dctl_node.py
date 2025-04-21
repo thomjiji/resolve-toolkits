@@ -40,7 +40,9 @@ def check_clips_for_dctl():
         if dctl_nodes:
             node_indices = [node_index for node_index, _ in dctl_nodes]
             node_labels = [node_label for _, node_label in dctl_nodes]
-            clips_data.append([i + 1, timeline_item.GetName(), node_indices, node_labels])
+            clips_data.append(
+                [i + 1, timeline_item.GetName(), node_indices, node_labels]
+            )
 
     if clips_data:
         print(

@@ -14,13 +14,14 @@ class TestMetadataExtraction(unittest.TestCase):
         self.test_mp4 = Path(self.test_dir) / "test.MP4"
 
         # Create a dummy MP4 file with some metadata
-        with open(self.test_mp4, 'w') as f:
+        with open(self.test_mp4, "w") as f:
             f.write("Dummy MP4 content")  # This is just for testing file existence
 
         # Mock MediaInfo.parse to return test data
         self.original_parse = None
         try:
             from pymediainfo import MediaInfo
+
             self.original_parse = MediaInfo.parse
             MediaInfo.parse = self.mock_parse
         except ImportError:
@@ -31,6 +32,7 @@ class TestMetadataExtraction(unittest.TestCase):
         # Restore original MediaInfo.parse
         if self.original_parse:
             from pymediainfo import MediaInfo
+
             MediaInfo.parse = self.original_parse
 
         # Remove temporary directory
@@ -38,6 +40,7 @@ class TestMetadataExtraction(unittest.TestCase):
 
     def mock_parse(self, file_path):
         """Mock MediaInfo.parse to return test data."""
+
         class MockTrack:
             def __init__(self):
                 self.track_type = "Other"
@@ -74,7 +77,7 @@ class TestMetadataExtraction(unittest.TestCase):
 
     def test_nonexistent_directory(self):
         """Test handling of nonexistent directory."""
-        with self.assertLogs(level='ERROR') as log:
+        with self.assertLogs(level="ERROR") as log:
             process_clip_directory("/nonexistent/path")
             self.assertIn("Directory /nonexistent/path does not exist", log.output[0])
 
@@ -84,10 +87,12 @@ class TestMetadataExtraction(unittest.TestCase):
         empty_dir = Path(self.test_dir) / "empty"
         empty_dir.mkdir()
 
-        with self.assertLogs(level='WARNING') as log:
+        with self.assertLogs(level="WARNING") as log:
             process_clip_directory(str(empty_dir))
-            self.assertIn("No MP4 files were found or no metadata was extracted", log.output[0])
+            self.assertIn(
+                "No MP4 files were found or no metadata was extracted", log.output[0]
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
