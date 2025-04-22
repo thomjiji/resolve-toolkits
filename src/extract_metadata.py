@@ -3,19 +3,62 @@ import csv
 import logging
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, Optional
 
 from pymediainfo import MediaInfo
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
 
-def extract_metadata(file_path: str) -> dict:
+# Configuration for metadata fields to extract
+METADATA_CONFIG = {
+    "WhiteBalance_FirstFrame": {
+        "track_type": "Other",
+        "attribute": "whitebalance_firstframe",
+        "description": "First frame white balance value",
+    },
+    "ExposureIndexofPhotoMeter_FirstFrame": {
+        "track_type": "Other",
+        "attribute": "exposureindexofphotometer_firstframe",
+        "description": "First frame exposure index value",
+    },
+    # Add new metadata fields here following the same structure
+    # Example:
+    # "NewField": {
+    #     "track_type": "Other",
+    #     "attribute": "new_field_attribute",
+    #     "description": "Description of the new field"
+    # }
+}
+
+
+def get_metadata_value(track, attribute: str) -> Optional[str]:
+    """Safely get metadata value from track if it exists.
+
+    Parameters
+    ----------
+    track : MediaInfo track object
+        The track to extract metadata from
+    attribute : str
+        The attribute name to get
+
+    Returns
+    -------
+    Optional[str]
+        The attribute value if it exists, None otherwise
+    """
+    if hasattr(track, attribute):
+        return getattr(track, attribute)
+    return None
+
+
+def extract_metadata(file_path: str) -> Dict[str, str]:
     """Extract metadata from an MP4 file.
 
     Parameters
@@ -25,35 +68,28 @@ def extract_metadata(file_path: str) -> dict:
 
     Returns
     -------
-    dict
-        Dictionary containing extracted metadata with the following keys:
-        - Filename: Name of the file.
-        - WhiteBalance_FirstFrame: First frame white balance value.
-        - ExposureIndexofPhotoMeter_FirstFrame: First frame exposure index value.
-        - ProcessingTime: Timestamp when metadata was processed.
+    Dict[str, str]
+        Dictionary containing extracted metadata with keys defined in METADATA_CONFIG
     """
     media_info = MediaInfo.parse(file_path)
 
-    # Initialize metadata dictionary
+    # Initialize metadata dictionary with default values
     metadata = {
         "Filename": Path(file_path).name,
-        "WhiteBalance_FirstFrame": "",
-        "ExposureIndexofPhotoMeter_FirstFrame": "",
         "ProcessingTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
-    # Extract specific metadata fields from video tracks
-    for track in media_info.tracks:
-        if track.track_type == "Other":
-            # Get WhiteBalance_FirstFrame
-            if hasattr(track, "whitebalance_firstframe"):
-                metadata["WhiteBalance_FirstFrame"] = track.whitebalance_firstframe
+    # Add empty values for all configured metadata fields
+    for field in METADATA_CONFIG:
+        metadata[field] = ""
 
-            # Get ExposureIndexofPhotoMeter_FirstFrame
-            if hasattr(track, "exposureindexofphotometer_firstframe"):
-                metadata["ExposureIndexofPhotoMeter_FirstFrame"] = (
-                    track.exposureindexofphotometer_firstframe
-                )
+    # Extract metadata from tracks
+    for track in media_info.tracks:
+        for field, config in METADATA_CONFIG.items():
+            if track.track_type == config["track_type"]:
+                value = get_metadata_value(track, config["attribute"])
+                if value is not None:
+                    metadata[field] = value
 
     return metadata
 
@@ -113,7 +149,9 @@ def main() -> None:
     """Parse command-line arguments and initiate metadata extraction."""
     parser = argparse.ArgumentParser(description="Extract metadata from MP4 files.")
     parser.add_argument(
-        "input_path", type=str, help="Path to the directory containing MP4 files"
+        "input_path",
+        type=str,
+        help="Path to the directory containing MP4 files",
     )
     parser.add_argument(
         "--output", "-o", type=str, help="Custom output CSV filename (optional)"

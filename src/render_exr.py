@@ -1,16 +1,54 @@
 import argparse
+import logging
 import time
+from typing import Dict, List
 
 from dftt_timecode import DfttTimecode
 from dri import Resolve
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
-def convert_smpte_to_frames(timecode, fps):
+
+def convert_smpte_to_frames(timecode: str, fps: float) -> int:
+    """Convert SMPTE timecode to frame number.
+
+    Parameters
+    ----------
+    timecode : str
+        SMPTE timecode string (e.g., "01:00:00:00")
+    fps : float
+        Frames per second of the timeline
+
+    Returns
+    -------
+    int
+        Frame number corresponding to the timecode
+    """
     timecode_obj = DfttTimecode(timecode, "auto", fps, drop_frame=False, strict=True)
     return timecode_obj.timecode_output("frame")
 
 
-def get_blue_markers(timeline, start_frames):
+def get_blue_markers(timeline, start_frames: int) -> Dict[int, Dict]:
+    """Get all blue markers from the timeline.
+
+    Parameters
+    ----------
+    timeline : object
+        DaVinci Resolve timeline object
+    start_frames : int
+        Start frame of the timeline
+
+    Returns
+    -------
+    Dict[int, Dict]
+        Dictionary of blue markers with frame numbers as keys
+    """
     markers = timeline.GetMarkers()
     blue_markers = {
         frame + int(start_frames): info
@@ -20,7 +58,21 @@ def get_blue_markers(timeline, start_frames):
     return blue_markers
 
 
-def get_clip_name_at_frame(timeline, frame):
+def get_clip_name_at_frame(timeline, frame: int) -> str:
+    """Get the name of the clip at a specific frame.
+
+    Parameters
+    ----------
+    timeline : object
+        DaVinci Resolve timeline object
+    frame : int
+        Frame number to check
+
+    Returns
+    -------
+    str
+        Name of the clip at the specified frame, or "unknown_clip" if not found
+    """
     clips = timeline.GetItemListInTrack("Video", 1)
     for clip in clips:
         if clip.GetStart() <= frame <= clip.GetEnd():
@@ -28,19 +80,54 @@ def get_clip_name_at_frame(timeline, frame):
     return "unknown_clip"
 
 
-def add_render_jobs(project, timeline, blue_markers, target_dir, render_preset):
+def add_render_jobs(
+    project,
+    timeline,
+    blue_markers: Dict[int, Dict],
+    target_dir: str,
+    render_preset: str,
+) -> List[str]:
+    """Add render jobs for each blue marker.
+
+    Parameters
+    ----------
+    project : object
+        DaVinci Resolve project object
+    timeline : object
+        DaVinci Resolve timeline object
+    blue_markers : Dict[int, Dict]
+        Dictionary of blue markers with frame numbers as keys
+    target_dir : str
+        Target directory for rendered files
+    render_preset : str
+        Name of the render preset to use
+
+    Returns
+    -------
+    List[str]
+        List of job IDs for the added render jobs
+
+    Raises
+    ------
+    ValueError
+        If the render preset cannot be loaded
+    """
     # Clear the render queue before adding new render jobs
     project.DeleteAllRenderJobs()
+    logger.info("Cleared existing render queue")
 
     job_ids = []
     for frame in blue_markers:
         clip_name = get_clip_name_at_frame(timeline, frame)
+        logger.debug(f"Processing frame {frame}, clip: {clip_name}")
 
-        # TODO: move this check upstream, otherwise the render preset doesn't load on, but the timeline params are modified.
+        # Load render preset
         if not project.LoadRenderPreset(render_preset):
-            raise ValueError(
-                f"Failed to load render preset: {render_preset}. Is this render preset exist?"
-            )
+            error_msg = f"Failed to load render preset: {render_preset}. Does this render preset exist?"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        # Configure render settings
         project.SetRenderSettings(
             {
                 "TargetDir": target_dir,
@@ -51,80 +138,194 @@ def add_render_jobs(project, timeline, blue_markers, target_dir, render_preset):
                 "MarkOut": frame,
             }
         )
+
+        # Add render job
         job_id = project.AddRenderJob()
         job_ids.append(job_id)
+        logger.info(f"Added render job for frame {frame}, clip: {clip_name}")
+
+    logger.info(f"Added {len(job_ids)} render jobs")
     return job_ids
 
 
-def main(target_dir, render_preset):
+def get_timeline_settings(timeline) -> Dict[str, str]:
+    """Get current timeline settings.
+
+    Parameters
+    ----------
+    timeline : object
+        DaVinci Resolve timeline object
+
+    Returns
+    -------
+    Dict[str, str]
+        Dictionary of timeline settings
+    """
+    return {
+        "useCustomSettings": timeline.GetSetting("useCustomSettings"),
+        "colorScienceMode": timeline.GetSetting("colorScienceMode"),
+        "colorAcesODT": timeline.GetSetting("colorAcesODT"),
+        "colorAcesGamutCompressType": timeline.GetSetting("colorAcesGamutCompressType"),
+        "colorSpaceOutput": timeline.GetSetting("colorSpaceOutput"),
+        "colorSpaceOutputGamutLimit": timeline.GetSetting("colorSpaceOutputGamutLimit"),
+        "colorSpaceTimeline": timeline.GetSetting("colorSpaceTimeline"),
+        "inputDRT": timeline.GetSetting("inputDRT"),
+        "outputDRT": timeline.GetSetting("outputDRT"),
+        "useCATransform": timeline.GetSetting("useCATransform"),
+    }
+
+
+def configure_timeline_for_exr(
+    project, timeline, original_settings: Dict[str, str]
+) -> None:
+    """Configure timeline settings for EXR rendering.
+
+    Parameters
+    ----------
+    project : object
+        DaVinci Resolve project object
+    timeline : object
+        DaVinci Resolve timeline object
+    original_settings : Dict[str, str]
+        Original timeline settings to reference
+
+    Returns
+    -------
+    None
+    """
+    # Check if current timeline is under project level color management
+    if original_settings["useCustomSettings"] == "0":
+        logger.info("Timeline is using project settings, switching to custom settings")
+        project_res_width = project.GetSetting("timelineResolutionWidth")
+        project_res_height = project.GetSetting("timelineResolutionHeight")
+        project_fps = project.GetSetting("timelineFrameRate")
+        timeline.SetSetting("useCustomSettings", "1")
+        timeline.SetSetting("timelineResolutionWidth", project_res_width)
+        timeline.SetSetting("timelineResolutionHeight", project_res_height)
+        timeline.SetSetting("timelineFrameRate", project_fps)
+
+    # Configure ACES color management
+    if original_settings["colorScienceMode"] != "acescct":
+        logger.info("Setting color science mode to ACES CCT")
+        timeline.SetSetting("colorScienceMode", "acescct")
+
+    # Set additional settings for ACES
+    logger.info("Configuring ACES settings for EXR output")
+    timeline.SetSetting("colorAcesODT", "No Output Transform")
+    timeline.SetSetting("colorAcesGamutCompressType", "None")
+
+
+def wait_for_rendering(project, job_ids: List[str]) -> None:
+    """Wait for rendering to complete.
+
+    Parameters
+    ----------
+    project : object
+        DaVinci Resolve project object
+    job_ids : List[str]
+        List of job IDs to monitor
+
+    Returns
+    -------
+    None
+    """
+    logger.info("Starting rendering process")
+    project.StartRendering(job_ids)
+
+    # Monitor rendering progress
+    while any(
+        project.GetRenderJobStatus(job_id)["JobStatus"] == "Rendering"
+        for job_id in job_ids
+    ):
+        time.sleep(1)  # Wait for rendering to complete
+
+    logger.info("Rendering completed")
+
+
+def restore_timeline_settings(timeline, original_settings: Dict[str, str]) -> None:
+    """Restore original timeline settings.
+
+    Parameters
+    ----------
+    timeline : object
+        DaVinci Resolve timeline object
+    original_settings : Dict[str, str]
+        Original timeline settings to restore
+
+    Returns
+    -------
+    None
+    """
+    logger.info("Restoring original timeline settings")
+
+    # If timeline was using project settings, simply toggle back
+    if original_settings["useCustomSettings"] == "0":
+        timeline.SetSetting("useCustomSettings", "0")
+        logger.info("Restored timeline to use project settings")
+        return
+
+    # Otherwise restore each setting individually
+    for key, value in original_settings.items():
+        if timeline.SetSetting(key, value):
+            logger.debug(f'Restored "{key}" to "{value}"')
+        else:
+            logger.warning(f'Failed to restore "{key}"')
+
+
+def main(target_dir: str, render_preset: str) -> None:
+    """Render EXR frames from blue markers in the current timeline.
+
+    Parameters
+    ----------
+    target_dir : str
+        Target directory for rendered files
+    render_preset : str
+        Name of the render preset to use
+
+    Returns
+    -------
+    None
+    """
+    # Initialize Resolve API
     resolve = Resolve.resolve_init()
     project_manager = resolve.GetProjectManager()
     project = project_manager.GetCurrentProject()
     current_timeline = project.GetCurrentTimeline()
 
+    logger.info(f"Processing timeline: {current_timeline.GetName()}")
+    logger.info(f"Target directory: {target_dir}")
+    logger.info(f"Render preset: {render_preset}")
+
+    # Get blue markers
     start_frames = current_timeline.GetStartFrame()
     blue_markers = get_blue_markers(current_timeline, start_frames)
+    logger.info(f"Found {len(blue_markers)} blue markers")
 
-    # Remember current timeline settings
-    original_settings = {
-        "useCustomSettings": current_timeline.GetSetting("useCustomSettings"),
-        "colorScienceMode": current_timeline.GetSetting("colorScienceMode"),
-        "colorAcesODT": current_timeline.GetSetting("colorAcesODT"),
-        "colorAcesGamutCompressType": current_timeline.GetSetting(
-            "colorAcesGamutCompressType"
-        ),
-        "colorSpaceOutput": current_timeline.GetSetting("colorSpaceOutput"),
-        "colorSpaceOutputGamutLimit": current_timeline.GetSetting(
-            "colorSpaceOutputGamutLimit"
-        ),
-        "colorSpaceTimeline": current_timeline.GetSetting("colorSpaceTimeline"),
-        "inputDRT": current_timeline.GetSetting("inputDRT"),
-        "outputDRT": current_timeline.GetSetting("outputDRT"),
-        "useCATransform": current_timeline.GetSetting("useCATransform"),
-    }
+    if not blue_markers:
+        logger.warning("No blue markers found in timeline. Nothing to render.")
+        return
 
-    # Check if current timeline is under project level color management (it means `current_timeline.GetSetting("useCustomSettings") == "0"`).
-    if original_settings["useCustomSettings"] == "0":
-        project_res_width = project.GetSetting("timelineResolutionWidth")
-        project_res_height = project.GetSetting("timelineResolutionHeight")
-        project_fps = project.GetSetting("timelineFrameRate")
-        current_timeline.SetSetting("useCustomSettings", "1")
-        current_timeline.SetSetting("timelineResolutionWidth", project_res_width)
-        current_timeline.SetSetting("timelineResolutionHeight", project_res_height)
-        current_timeline.SetSetting("timelineFrameRate", project_fps)
+    # Save original settings to restore later
+    original_settings = get_timeline_settings(current_timeline)
 
-    # Check if current timeline is color managed by ACES
-    if original_settings["colorScienceMode"] != "acescct":
-        current_timeline.SetSetting("colorScienceMode", "acescct")
+    try:
+        # Configure timeline for EXR rendering
+        configure_timeline_for_exr(project, current_timeline, original_settings)
 
-    # Set additional settings for ACES
-    current_timeline.SetSetting("colorAcesODT", "No Output Transform")
-    current_timeline.SetSetting("colorAcesGamutCompressType", "None")
+        # Add render jobs
+        job_ids = add_render_jobs(
+            project, current_timeline, blue_markers, target_dir, render_preset
+        )
 
-    job_ids = add_render_jobs(
-        project, current_timeline, blue_markers, target_dir, render_preset
-    )
-
-    if job_ids:
-        project.StartRendering(job_ids)
-        while any(
-            project.GetRenderJobStatus(job_id)["JobStatus"] == "Rendering"
-            for job_id in job_ids
-        ):
-            time.sleep(1)  # Wait for rendering to complete
-
-    # Restoring original timeline settings
-    for key, value in original_settings.items():
-        if original_settings["useCustomSettings"] == "0":
-            current_timeline.SetSetting("useCustomSettings", "0")
-            print(
-                'Restored original timeline color management settings (by simply toggle the button "Use Project Settings")'
-            )
-            break
-        if current_timeline.SetSetting(key, value):
-            print(f'Restored "{key}" to "{value}".')
+        # Start rendering if jobs were added
+        if job_ids:
+            wait_for_rendering(project, job_ids)
         else:
-            print(f'Failed to restore "{key}".')
+            logger.warning("No render jobs were created")
+
+    finally:
+        # Always restore original settings, even if an error occurred
+        restore_timeline_settings(current_timeline, original_settings)
 
 
 if __name__ == "__main__":

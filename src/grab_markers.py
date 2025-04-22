@@ -5,9 +5,9 @@ from dri import Resolve
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, 
+    level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ def initialize_resolve() -> tuple:
     Returns
     -------
     tuple
-        Tuple containing (resolve, project_manager, project, media_storage, 
+        Tuple containing (resolve, project_manager, project, media_storage,
         media_pool, root_folder, current_timeline)
     """
     resolve = Resolve.resolve_init()
@@ -56,13 +56,13 @@ def initialize_resolve() -> tuple:
     logger.info(f"Current timeline: {current_timeline.GetName()}")
 
     return (
-        resolve, 
-        project_manager, 
-        project, 
-        media_storage, 
-        media_pool, 
-        root_folder, 
-        current_timeline
+        resolve,
+        project_manager,
+        project,
+        media_storage,
+        media_pool,
+        root_folder,
+        current_timeline,
     )
 
 
@@ -164,9 +164,7 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
-        "--debug", "-d", 
-        action="store_true", 
-        help="Enable debug logging"
+        "--debug", "-d", action="store_true", help="Enable debug logging"
     )
 
     args = parser.parse_args()
