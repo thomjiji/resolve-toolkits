@@ -5,6 +5,7 @@ and optionally removes empty subfolders.
 
 import argparse
 from dri import Resolve
+from resolve_utils import initialize_resolve
 
 
 def remove_non_video_clips(folder):
@@ -60,12 +61,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    resolve = Resolve.resolve_init()
-    project_manager = resolve.GetProjectManager()
-    project = project_manager.GetCurrentProject()
-    media_pool = project.GetMediaPool()
-    root_folder = media_pool.GetRootFolder()
-    current_folder = media_pool.GetCurrentFolder()
+    _, _, project, media_pool, root_folder, current_folder = initialize_resolve(
+        need_media_pool=True,
+        need_root_folder=True,
+        need_current_folder=True
+    )
 
     # Default behavior: Remove non-video items
     remove_non_video_clips(current_folder)

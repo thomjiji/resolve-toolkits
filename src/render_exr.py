@@ -5,6 +5,7 @@ from typing import Dict, List
 
 from dftt_timecode import DfttTimecode
 from dri import Resolve
+from resolve_utils import initialize_resolve
 
 # Configure logging
 logging.basicConfig(
@@ -287,10 +288,9 @@ def main(target_dir: str, render_preset: str) -> None:
     None
     """
     # Initialize Resolve API
-    resolve = Resolve.resolve_init()
-    project_manager = resolve.GetProjectManager()
-    project = project_manager.GetCurrentProject()
-    current_timeline = project.GetCurrentTimeline()
+    _, _, project, current_timeline = initialize_resolve(
+        need_current_timeline=True
+    )
 
     logger.info(f"Processing timeline: {current_timeline.GetName()}")
     logger.info(f"Target directory: {target_dir}")

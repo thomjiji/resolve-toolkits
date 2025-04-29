@@ -16,6 +16,7 @@ import sys
 
 from dri import Resolve
 from tabulate import tabulate
+from resolve_utils import initialize_resolve
 
 
 def fetch_project_data():
@@ -23,8 +24,7 @@ def fetch_project_data():
     Fetch project names and their unique IDs from DaVinci Resolve in the current folder.
     """
     # Initialize Resolve and project manager
-    resolve = Resolve.resolve_init()
-    project_manager = resolve.GetProjectManager()
+    resolve, project_manager, _ = initialize_resolve()
 
     # Fetch projects from the current folder
     project_list = project_manager.GetProjectListInCurrentFolder()

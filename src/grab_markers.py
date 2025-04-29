@@ -2,6 +2,7 @@ import argparse
 import logging
 
 from dri import Resolve
+from resolve_utils import initialize_resolve
 
 # Configure logging
 logging.basicConfig(
@@ -35,35 +36,6 @@ VALID_COLORS = [
 VALID_COLORS_MAP = {c.lower(): c for c in VALID_COLORS}
 
 
-def initialize_resolve() -> tuple:
-    """Initialize DaVinci Resolve API and get common objects.
-
-    Returns
-    -------
-    tuple
-        Tuple containing (resolve, project_manager, project, media_storage,
-        media_pool, root_folder, current_timeline)
-    """
-    resolve = Resolve.resolve_init()
-    project_manager = resolve.GetProjectManager()
-    project = project_manager.GetCurrentProject()
-    media_storage = resolve.GetMediaStorage()
-    media_pool = project.GetMediaPool()
-    root_folder = media_pool.GetRootFolder()
-    current_timeline = project.GetCurrentTimeline()
-
-    logger.info(f"Initialized Resolve with project: {project.GetName()}")
-    logger.info(f"Current timeline: {current_timeline.GetName()}")
-
-    return (
-        resolve,
-        project_manager,
-        project,
-        media_storage,
-        media_pool,
-        root_folder,
-        current_timeline,
-    )
 
 
 def capitalized_color(color_str: str) -> str:
@@ -105,7 +77,12 @@ def main(selected_color: str) -> None:
     None
     """
     # Initialize Resolve API
-    _, _, _, _, _, _, current_timeline = initialize_resolve()
+    _, _, _, _, _, _, current_timeline = initialize_resolve(
+        need_media_storage=True,
+        need_media_pool=True,
+        need_root_folder=True,
+        need_current_timeline=True
+    )
 
     # Get start frame of current timeline
     start_frame = current_timeline.GetStartFrame()
