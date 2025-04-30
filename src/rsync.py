@@ -14,6 +14,10 @@ RSYNC_OPTIONS = [
     "-P",  # equivalent to --partial --progress; shows progress during transfer and keeps partially transferred files
     "-h",  # human-readable; output numbers in a human-readable format
     "--update",  # skip files that are newer on the receiver
+    "--checksum",
+    "--info=progress2",  # shows detailed progress information
+    "--info=name0",  # shows the name of the current file being transferred
+    "--info=stats2",  # shows detailed statistics at the end
 ]
 
 
@@ -28,9 +32,7 @@ def build_exclude_opts():
 # Function to build rsync command
 def build_rsync_cmd(action):
     cmd = ["rsync"] + RSYNC_OPTIONS + build_exclude_opts()
-    if action == "run":
-        cmd.append("--info=progress2")
-    else:
+    if action != "run":
         cmd.append("-n")  # dry-run
     return cmd
 
@@ -76,6 +78,11 @@ def main():
         "--swap",
         action="store_true",
         help="Swap source and target to verify synchronization in the reverse direction.",
+    )
+    parser.add_argument(
+        "--checksum",
+        action="store_true",
+        help="Use the rsync built-in --checksum flag to compare files based on checksums.",
     )
 
     # Parse arguments
