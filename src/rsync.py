@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
+import logging
 import subprocess
 from pathlib import Path
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
 # Changeable parameters
 EXCLUSIONS = [".DS_Store", "_gsdata_", ".*"]
@@ -77,7 +81,7 @@ def execute_rsync(source, target, action, checksum=False):
     # Colorize paths using ANSI escape codes
     source_colored = f"\033[94m{source}\033[0m"  # Blue
     target_colored = f"\033[92m{target}\033[0m"  # Green
-    print(
+    logging.info(
         f"Synchronizing from '{source_colored}' to '{target_colored}' (action: {action})"
     )
 
@@ -93,11 +97,10 @@ def execute_rsync(source, target, action, checksum=False):
     else:
         result = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
         subprocess.run(["less"], input=result.stdout, text=True)
-        print(result.stdout)
+        logging.info(result.stdout)
 
 
 def main():
-    # Set up argument parser
     parser = argparse.ArgumentParser(
         description="Synchronize files from SOURCE to TARGET with rsync."
     )
@@ -120,14 +123,14 @@ def main():
         help="Use the rsync built-in --checksum flag to compare files based on checksums.",
     )
 
-    # Parse arguments
     args = parser.parse_args()
 
     # Swap source and target if --swap is provided
     source = args.target if args.swap else args.source
     target = args.source if args.swap else args.target
 
-    # Execute rsync
+    logging.info(f"Checksum enabled: {args.checksum}")
+
     execute_rsync(source, target, args.action, checksum=args.checksum)
 
 
