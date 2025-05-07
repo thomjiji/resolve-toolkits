@@ -12,13 +12,15 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(mes
 # Changeable parameters
 EXCLUSIONS = [".DS_Store", "_gsdata_", ".*"]
 
+CHECKSUM_ALGO = "xxh128"
+
 RSYNC_OPTIONS = [
     "-a",  # archive mode; equals -rlptgoD (no -H)
     "-v",  # verbose; increase verbosity
     "-i",  # itemize changes; output a change-summary for all updates
     "-P",  # equivalent to --partial --progress; shows progress during transfer and keeps partially transferred files
     "-h",  # human-readable; output numbers in a human-readable format
-    "--update",  # skip files that are newer on the receiver
+    # "--update",  # skip files that are newer on the receiver
     "--info=progress2",  # shows detailed progress information
     "--info=name0",  # shows the name of the current file being transferred
     "--info=stats2",  # shows detailed statistics at the end
@@ -40,7 +42,7 @@ def build_exclude_opts():
     return exclude_opts
 
 
-def build_rsync_cmd(action, checksum=False, log_file_name="rsync.log"):
+def build_rsync_cmd(action, checksum=False, log_file_name=None):
     """
     Build the rsync command with the specified options.
 
@@ -50,8 +52,8 @@ def build_rsync_cmd(action, checksum=False, log_file_name="rsync.log"):
         The action to perform ('run' for actual sync, otherwise dry-run).
     checksum : bool, optional
         Whether to include the --checksum flag in the rsync command.
-    log_file_name : str, optional
-        The log file name to use for --log-file.
+    log_file_name : str or None, optional
+        The log file name to use for --log-file. If None, do not log to file.
 
     Returns
     -------
@@ -61,16 +63,18 @@ def build_rsync_cmd(action, checksum=False, log_file_name="rsync.log"):
     cmd = ["rsync"] + RSYNC_OPTIONS + build_exclude_opts()
     if checksum:
         cmd.append("--checksum")
+        cmd.append(f"--cc={CHECKSUM_ALGO}")
     if action != "run":
         cmd.append("-n")  # dry-run
-    # Always add log file and out-format
-    cmd.append(f"--log-file={log_file_name}")
-    cmd.append("--out-format=%i %n%L %C")
-    cmd.append("--log-file-format=%i %n%L %C")
+    # Only add log file and log-file-format if requested
+    if log_file_name:
+        cmd.append(f"--log-file={log_file_name}")
+        cmd.append("--out-format=%i %n%L %C")
+        cmd.append("--log-file-format=%i %n%L %C")
     return cmd
 
 
-def execute_rsync(source, target, action, checksum=False, log_file_name="rsync.log"):
+def execute_rsync(source, target, action, checksum=False, log_file_name=None):
     """
     Execute the rsync command to synchronize files from source to target.
 
@@ -84,8 +88,8 @@ def execute_rsync(source, target, action, checksum=False, log_file_name="rsync.l
         The action to perform ('run' for actual sync, otherwise dry-run).
     checksum : bool, optional
         Whether to include the --checksum flag in the rsync command.
-    log_file_name : str, optional
-        The log file name to use for --log-file.
+    log_file_name : str or None, optional
+        The log file name to use for --log-file. If None, do not log to file.
     """
     # Colorize paths using ANSI escape codes
     source_colored = f"\033[94m{source}\033[0m"  # Blue
@@ -131,6 +135,16 @@ def main():
         action="store_true",
         help="Use the rsync built-in --checksum flag to compare files based on checksums.",
     )
+    parser.add_argument(
+        "--log",
+        action="store_true",
+        help="Write rsync output to a log file.",
+    )
+    parser.add_argument(
+        "--log-path",
+        default=None,
+        help="Path to write the log file. If not provided, writes to current working directory.",
+    )
 
     args = parser.parse_args()
 
@@ -138,11 +152,24 @@ def main():
     source = args.target if args.swap else args.source
     target = args.source if args.swap else args.target
 
-    # Generate timestamped log file name
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file_name = f"rsync_{timestamp}.log"
+    # Determine log file name if logging is enabled
+    log_file_name = None
+    if args.log:
+        import os
+
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_dir = args.log_path or os.getcwd()
+        log_file_name = str(Path(log_dir) / f"rsync_{timestamp}.log")
+
     # Log whether checksum is enabled
     logging.info(f"Checksum enabled: {args.checksum}")
+    if args.checksum:
+        logging.info(f"Checksum algorithm: {CHECKSUM_ALGO}")
+    if args.log:
+        logging.info(f"Logging enabled. Log file: {log_file_name}")
+    else:
+        logging.info("Logging disabled.")
+
     # Execute rsync
     execute_rsync(
         source, target, args.action, checksum=args.checksum, log_file_name=log_file_name
