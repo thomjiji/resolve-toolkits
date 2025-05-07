@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import datetime
 import logging
 import subprocess
 from pathlib import Path
@@ -39,7 +40,7 @@ def build_exclude_opts():
     return exclude_opts
 
 
-def build_rsync_cmd(action, checksum=False):
+def build_rsync_cmd(action, checksum=False, log_file_name="rsync.log"):
     """
     Build the rsync command with the specified options.
 
@@ -49,6 +50,8 @@ def build_rsync_cmd(action, checksum=False):
         The action to perform ('run' for actual sync, otherwise dry-run).
     checksum : bool, optional
         Whether to include the --checksum flag in the rsync command.
+    log_file_name : str, optional
+        The log file name to use for --log-file.
 
     Returns
     -------
@@ -60,10 +63,14 @@ def build_rsync_cmd(action, checksum=False):
         cmd.append("--checksum")
     if action != "run":
         cmd.append("-n")  # dry-run
+    # Always add log file and out-format
+    cmd.append(f"--log-file={log_file_name}")
+    cmd.append("--out-format=%i %n%L %C")
+    cmd.append("--log-file-format=%i %n%L %C")
     return cmd
 
 
-def execute_rsync(source, target, action, checksum=False):
+def execute_rsync(source, target, action, checksum=False, log_file_name="rsync.log"):
     """
     Execute the rsync command to synchronize files from source to target.
 
@@ -77,6 +84,8 @@ def execute_rsync(source, target, action, checksum=False):
         The action to perform ('run' for actual sync, otherwise dry-run).
     checksum : bool, optional
         Whether to include the --checksum flag in the rsync command.
+    log_file_name : str, optional
+        The log file name to use for --log-file.
     """
     # Colorize paths using ANSI escape codes
     source_colored = f"\033[94m{source}\033[0m"  # Blue
@@ -88,7 +97,7 @@ def execute_rsync(source, target, action, checksum=False):
     source_path = Path(source)
     if source_path.is_dir():
         source = str(source_path) + "/"
-    cmd = build_rsync_cmd(action, checksum=checksum)
+    cmd = build_rsync_cmd(action, checksum=checksum, log_file_name=log_file_name)
     cmd.append(source)
     cmd.append(target)
 
@@ -129,9 +138,15 @@ def main():
     source = args.target if args.swap else args.source
     target = args.source if args.swap else args.target
 
+    # Generate timestamped log file name
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file_name = f"rsync_{timestamp}.log"
+    # Log whether checksum is enabled
     logging.info(f"Checksum enabled: {args.checksum}")
-
-    execute_rsync(source, target, args.action, checksum=args.checksum)
+    # Execute rsync
+    execute_rsync(
+        source, target, args.action, checksum=args.checksum, log_file_name=log_file_name
+    )
 
 
 if __name__ == "__main__":
