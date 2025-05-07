@@ -20,16 +20,37 @@ RSYNC_OPTIONS = [
 ]
 
 
-# Function to build exclusion options
 def build_exclude_opts():
+    """
+    Build a list of rsync exclusion options based on the EXCLUSIONS list.
+
+    Returns
+    -------
+    list of str
+        List of --exclude options for rsync.
+    """
     exclude_opts = []
     for item in EXCLUSIONS:
         exclude_opts.append(f"--exclude={item}")
     return exclude_opts
 
 
-# Function to build rsync command
 def build_rsync_cmd(action, checksum=False):
+    """
+    Build the rsync command with the specified options.
+
+    Parameters
+    ----------
+    action : str
+        The action to perform ('run' for actual sync, otherwise dry-run).
+    checksum : bool, optional
+        Whether to include the --checksum flag in the rsync command.
+
+    Returns
+    -------
+    list of str
+        The complete rsync command as a list suitable for subprocess.
+    """
     cmd = ["rsync"] + RSYNC_OPTIONS + build_exclude_opts()
     if checksum:
         cmd.append("--checksum")
@@ -38,8 +59,21 @@ def build_rsync_cmd(action, checksum=False):
     return cmd
 
 
-# Function to execute rsync
 def execute_rsync(source, target, action, checksum=False):
+    """
+    Execute the rsync command to synchronize files from source to target.
+
+    Parameters
+    ----------
+    source : str
+        The source directory or file path.
+    target : str
+        The target directory or file path.
+    action : str
+        The action to perform ('run' for actual sync, otherwise dry-run).
+    checksum : bool, optional
+        Whether to include the --checksum flag in the rsync command.
+    """
     # Colorize paths using ANSI escape codes
     source_colored = f"\033[94m{source}\033[0m"  # Blue
     target_colored = f"\033[92m{target}\033[0m"  # Green
