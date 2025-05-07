@@ -14,7 +14,6 @@ RSYNC_OPTIONS = [
     "-P",  # equivalent to --partial --progress; shows progress during transfer and keeps partially transferred files
     "-h",  # human-readable; output numbers in a human-readable format
     "--update",  # skip files that are newer on the receiver
-    "--checksum",
     "--info=progress2",  # shows detailed progress information
     "--info=name0",  # shows the name of the current file being transferred
     "--info=stats2",  # shows detailed statistics at the end
@@ -30,15 +29,17 @@ def build_exclude_opts():
 
 
 # Function to build rsync command
-def build_rsync_cmd(action):
+def build_rsync_cmd(action, checksum=False):
     cmd = ["rsync"] + RSYNC_OPTIONS + build_exclude_opts()
+    if checksum:
+        cmd.append("--checksum")
     if action != "run":
         cmd.append("-n")  # dry-run
     return cmd
 
 
 # Function to execute rsync
-def execute_rsync(source, target, action):
+def execute_rsync(source, target, action, checksum=False):
     # Colorize paths using ANSI escape codes
     source_colored = f"\033[94m{source}\033[0m"  # Blue
     target_colored = f"\033[92m{target}\033[0m"  # Green
@@ -49,7 +50,7 @@ def execute_rsync(source, target, action):
     source_path = Path(source)
     if source_path.is_dir():
         source = str(source_path) + "/"
-    cmd = build_rsync_cmd(action)
+    cmd = build_rsync_cmd(action, checksum=checksum)
     cmd.append(source)
     cmd.append(target)
 
@@ -93,7 +94,7 @@ def main():
     target = args.source if args.swap else args.target
 
     # Execute rsync
-    execute_rsync(source, target, args.action)
+    execute_rsync(source, target, args.action, checksum=args.checksum)
 
 
 if __name__ == "__main__":
