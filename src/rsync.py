@@ -44,9 +44,6 @@ def execute_rsync(source, target, action):
         f"Synchronizing from '{source_colored}' to '{target_colored}' (action: {action})"
     )
 
-    source_path = Path(source)
-    if source_path.is_dir():
-        source = str(source_path) + "/"
     cmd = build_rsync_cmd(action)
     cmd.append(source)
     cmd.append(target)
