@@ -177,7 +177,7 @@ def main() -> None:
         # '**/*.xml' means find all files ending with '.xml' ('*.xml') in the current directory
         # and any subdirectory ('**').
         # The type of xml_file_path is pathlib.Path
-        for xml_file_path in base_directory.glob("**/*.xml"):
+        for xml_file_path in base_directory.glob("**/*.XML"):
             # Although *.xml in glob usually ensures this, we double-check it's actually a file
             if xml_file_path.is_file():
                 xml_files_count += 1
