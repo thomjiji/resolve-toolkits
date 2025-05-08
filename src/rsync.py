@@ -18,11 +18,9 @@ RSYNC_OPTIONS = [
     "-a",  # archive mode; equals -rlptgoD (no -H)
     "-v",  # verbose; increase verbosity
     "-i",  # itemize changes; output a change-summary for all updates
-    "--partial",
-    # "-P",  # equivalent to --partial --progress; shows progress during transfer and keeps partially transferred files
+    "-P",  # equivalent to --partial --progress; shows progress during transfer and keeps partially transferred files
     "-h",  # human-readable; output numbers in a human-readable format
     "--update",  # skip files that are newer on the receiver
-    "--info=progress2",  # shows detailed progress information
     # "--info=name0",  # shows the name of the current file being transferred
     # "--info=stats2",  # shows detailed statistics at the end
 ]
@@ -67,8 +65,12 @@ def build_rsync_cmd(
     if checksum:
         cmd.append("--checksum")
         cmd.append(f"--cc={CHECKSUM_ALGO}")
-    if action != "run":
+
+    if action == "run":
+        cmd.append("--info=progress2")
+    else:
         cmd.append("-n")  # dry-run
+
     # Only add log file and log-file-format if requested
     if log_file_name:
         cmd.append(f"--log-file={log_file_name}")
