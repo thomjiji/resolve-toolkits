@@ -117,10 +117,18 @@ def execute_rsync(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Synchronize files from SOURCE to TARGET with rsync."
+        description="Synchronize files from one or more SOURCE paths to TARGET with rsync."
     )
-    parser.add_argument("source", help="The source directory to rsync from.")
-    parser.add_argument("target", help="The target directory to rsync to.")
+    parser.add_argument(
+        "-i",
+        "--inputs",
+        nargs="+",
+        required=True,
+        help="One or more source directories or files to rsync from.",
+    )
+    parser.add_argument(
+        "-o", "--output", required=True, help="The target directory to rsync to."
+    )
     parser.add_argument(
         "action",
         nargs="?",
@@ -130,7 +138,7 @@ def main():
     parser.add_argument(
         "--swap",
         action="store_true",
-        help="Swap source and target to verify synchronization in the reverse direction.",
+        help="Swap source and target to verify synchronization in the reverse direction. (Not supported with multiple inputs)",
     )
     parser.add_argument(
         "--checksum",
@@ -150,10 +158,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Swap source and target if --swap is provided
-    source = args.target if args.swap else args.source
-    target = args.source if args.swap else args.target
-
     # Determine log file name if logging is enabled
     log_file_name = None
     if args.log:
@@ -172,10 +176,16 @@ def main():
     else:
         logging.info("Logging disabled.")
 
-    # Execute rsync
-    execute_rsync(
-        source, target, args.action, checksum=args.checksum, log_file_name=log_file_name
-    )
+    # For each input path, sync to the same target
+    for source in args.inputs:
+        logging.info(f"Processing input: {source}")
+        execute_rsync(
+            source,
+            args.output,
+            args.action,
+            checksum=args.checksum,
+            log_file_name=log_file_name,
+        )
 
 
 if __name__ == "__main__":
