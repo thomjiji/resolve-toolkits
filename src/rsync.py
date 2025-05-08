@@ -43,7 +43,9 @@ def build_exclude_opts():
     return exclude_opts
 
 
-def build_rsync_cmd(action: str, checksum=False, log_file_name=None):
+def build_rsync_cmd(
+    action: str, checksum: bool = False, log_file_name: str | None = None
+) -> list[str]:
     """
     Build the rsync command with the specified options.
 
@@ -76,15 +78,19 @@ def build_rsync_cmd(action: str, checksum=False, log_file_name=None):
 
 
 def execute_rsync(
-    source: str, target: str, action: str, checksum=False, log_file_name=None
-):
+    sources: list[str],
+    target: str,
+    action: str,
+    checksum: bool = False,
+    log_file_name: str | None = None,
+) -> None:
     """
-    Execute the rsync command to synchronize files from source to target.
+    Execute the rsync command to synchronize files from multiple sources to target.
 
     Parameters
     ----------
-    source : str
-        The source directory or file path.
+    sources : list of str
+        The source directories or file paths.
     target : str
         The target directory or file path.
     action : str
@@ -95,25 +101,34 @@ def execute_rsync(
         The log file name to use for --log-file. If None, do not log to file.
     """
     # Colorize paths using ANSI escape codes
-    source_colored = f"\033[94m{source}\033[0m"  # Blue
+    sources_colored = ", ".join([f"\033[94m{src}\033[0m" for src in sources])  # Blue
     target_colored = f"\033[92m{target}\033[0m"  # Green
     logging.info(
-        f"Synchronizing from '{source_colored}' to '{target_colored}' (action: {action})"
+        f"Synchronizing from '[{sources_colored}]' to '{target_colored}' (action: {action})"
     )
 
-    source_path = Path(source)
-    if source_path.is_dir():
-        source = str(source_path) + "/"
+    # Ensure directory sources end with '/'
+    # processed_sources = []
+    # for src in sources:
+    #     src_path = Path(src)
+    #     if src_path.is_dir():
+    #         processed_sources.append(str(src_path) + "/")
+    #     else:
+    #         processed_sources.append(str(src_path))
+
     cmd = build_rsync_cmd(action, checksum=checksum, log_file_name=log_file_name)
-    cmd.append(source)
+    cmd += sources
     cmd.append(target)
 
-    if action == "run":
-        subprocess.run(cmd)
-    else:
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
-        subprocess.run(["less"], input=result.stdout, text=True)
-        logging.info(result.stdout)
+    try:
+        if action == "run":
+            subprocess.run(cmd, check=True)
+        else:
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, text=True, check=True)
+            subprocess.run(["less"], input=result.stdout, text=True)
+            logging.info(result.stdout)
+    except subprocess.CalledProcessError as e:
+        logging.error(f"rsync failed: {e}", exc_info=True)
 
 
 def main():
@@ -178,15 +193,23 @@ def main():
         logging.info("Logging disabled.")
 
     # For each input path, sync to the same target
-    for source in args.inputs:
-        logging.info(f"Processing input: {source}")
-        execute_rsync(
-            source,
-            args.output,
-            args.action,
-            checksum=args.checksum,
-            log_file_name=log_file_name,
-        )
+    # for source in args.inputs:
+    #     logging.info(f"Processing input: {source}")
+    #     execute_rsync(
+    #         source,
+    #         args.output,
+    #         args.action,
+    #         checksum=args.checksum,
+    #         log_file_name=log_file_name,
+    #     )
+
+    execute_rsync(
+        args.inputs,
+        args.output,
+        args.action,
+        checksum=args.checksum,
+        log_file_name=log_file_name,
+    )
 
 
 if __name__ == "__main__":
