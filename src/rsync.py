@@ -42,7 +42,7 @@ def build_exclude_opts():
     return exclude_opts
 
 
-def build_rsync_cmd(action, checksum=False, log_file_name=None):
+def build_rsync_cmd(action: str, checksum=False, log_file_name=None):
     """
     Build the rsync command with the specified options.
 
@@ -74,7 +74,9 @@ def build_rsync_cmd(action, checksum=False, log_file_name=None):
     return cmd
 
 
-def execute_rsync(source, target, action, checksum=False, log_file_name=None):
+def execute_rsync(
+    source: str, target: str, action: str, checksum=False, log_file_name=None
+):
     """
     Execute the rsync command to synchronize files from source to target.
 
