@@ -4,35 +4,34 @@ traverse_and_parse_xml.py
 This script traverses a given directory and its subdirectories to find all XML files
 with the uppercase '.XML' extension. It extracts specific information from these
 XML files by looking for <Item> tags whose 'name' attribute contains specific
-keywords (e.g., 'Gamma', 'ColorPrimaries'). It then writes the extracted information
-(File Path, Item Name, Item Value) to a CSV file.
+keywords (e.g., 'Gamma', 'ColorPrimaries').
+
+Based on command-line arguments, the script can optionally write the extracted
+information (File Path, Item Name, Item Value) to a dated CSV file.
 
 The script uses argparse for command-line arguments, pathlib for directory traversal,
 xml.etree.ElementTree for XML parsing, csv for writing results, and includes
 detailed logging output.
 
-Example Usage:
+Example Usage (logging only):
     python traverse_and_parse_xml.py /path/to/your/directory
+
+Example Usage (logging and outputting CSV):
+    python traverse_and_parse_xml.py /path/to/your/directory --output my_extraction_results
+    # This will create a file like my_extraction_results_YYYY-MM-DD.csv
 """
 
 import argparse
-import csv  # Import the csv module
 import logging
 import pathlib
-import sys
 import xml.etree.ElementTree as ET
-from typing import Dict, List, Optional  # Import types for type hints
-
-# --- Logging Setup ---
-# Configure the logger
-# level=logging.INFO means logging messages of INFO, WARNING, ERROR, CRITICAL levels
-# format defines the format of log messages: timestamp - log level name - message content
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+import sys
+import csv  # Import the csv module
+from typing import List, Dict, Optional  # Import types for type hints
+from datetime import date  # Import date for including it in the filename
 
 # --- Constants ---
-CSV_OUTPUT_FILENAME: str = "xml_extraction_results.csv"
+# Field names for the CSV file
 CSV_FIELDNAMES: List[str] = ["File Path", "Item Name", "Item Value"]
 
 
@@ -56,7 +55,8 @@ def process_xml_file(file_path: pathlib.Path) -> List[Dict[str, str]]:
     List[Dict[str, str]]
         A list of dictionaries. Each dictionary represents a found item and contains
         keys 'File Path', 'Item Name', and 'Item Value'. Returns an empty list
-        if no relevant items are found or if an error occurs.
+        if no relevant items are found or if an error occurs during processing
+        of *this specific file*.
 
     Raises
     ------
@@ -87,7 +87,9 @@ def process_xml_file(file_path: pathlib.Path) -> List[Dict[str, str]]:
         tree: ET.ElementTree = ET.parse(file_path)
         root: ET.Element = tree.getroot()
 
-        # Use findall to find all matching Item elements
+        # Use findall to find all matching Item elements anywhere in the document
+        # .//ns:Item searches for all (recursively) 'Item' tags within the 'ns'
+        # namespace (mapped above to the namespace_uri) anywhere below the current element (root).
         found_items_count: int = 0
         # The type of item_element is ET.Element
         for item_element in root.findall(".//ns:Item", namespaces):
@@ -102,16 +104,15 @@ def process_xml_file(file_path: pathlib.Path) -> List[Dict[str, str]]:
                 found_items_count += 1
                 # If it matches and has a value attribute, add it to our list
                 if item_value is not None:
+                    # Store absolute path for clarity in CSV
                     extracted_data_for_file.append(
                         {
-                            "File Path": str(
-                                file_path.resolve()
-                            ),  # Store absolute path
+                            "File Path": str(file_path.resolve()),
                             "Item Name": item_name,
                             "Item Value": item_value,
                         }
                     )
-                    # Optionally log finding it
+                    # Optionally log finding it for immediate feedback
                     logging.info(
                         f"  Found relevant item: name='{item_name}', value='{item_value}'"
                     )
@@ -120,6 +121,7 @@ def process_xml_file(file_path: pathlib.Path) -> List[Dict[str, str]]:
                         f"  Found relevant item '{item_name}' but it has no 'value' attribute in file '{file_path.name}'."
                     )
 
+        # Log a warning if no relevant items were found in this specific file
         if found_items_count == 0:
             logging.warning(
                 f"  Found no items matching keywords {target_name_keywords} in file '{file_path.name}'."
@@ -127,70 +129,58 @@ def process_xml_file(file_path: pathlib.Path) -> List[Dict[str, str]]:
 
     except FileNotFoundError:
         logging.error(f"Error: File not found: {file_path}")
-        return []  # Return empty list on error
+        # Return empty list on error processing this file
+        return []
     except ET.ParseError as e:
         logging.error(f"Error: Failed to parse XML file '{file_path}': {e}")
-        return []  # Return empty list on error
+        # Return empty list on error processing this file
+        return []
     except Exception as e:
         logging.error(
             f"An unexpected error occurred while processing '{file_path}': {e}",
             exc_info=True,
         )  # exc_info=True prints traceback
-        return []  # Return empty list on error
+        # Return empty list on error processing this file
+        return []
 
     return extracted_data_for_file
 
 
-# --- Main Execution Block ---
-def main() -> None:
+# --- Main Execution Function ---
+def main(args: argparse.Namespace) -> None:
     """
-    Main function to parse command-line arguments, initiate directory traversal,
-    and write extracted data to a CSV file.
+    Main function to control script execution, including directory traversal
+    and optional CSV writing.
 
-    Configures the command-line parser, gets the user-specified directory path.
-    Checks if the path is a valid directory, then recursively finds and processes
-    all .XML files within it. Collects results and writes them to a CSV file.
-    Logs status and errors during execution.
+    Retrieves the directory path and output filename base from the parsed
+    command-line arguments. Checks directory validity, recursively finds and
+    processes .XML files. Collects extracted data and, if an output filename
+    base was provided, writes the data to a dated CSV file. Logs status
+    and errors throughout execution.
 
     Parameters
     ----------
-    None
-        This function parses command-line arguments directly and takes no parameters.
+    args : argparse.Namespace
+        The namespace object containing parsed command-line arguments.
 
     Returns
     -------
     None
-        This function controls the script execution flow, writes results to CSV,
-        and exits the program on errors.
+        This function controls the script's flow and exits using sys.exit() on errors.
 
     Raises
     ------
     SystemExit
-        If the provided path is not a valid directory, or if an unrecoverable error
-        occurs during directory traversal or CSV writing, the script will exit
+        If the provided directory path is invalid, or if a critical error occurs
+        during directory traversal or CSV file writing, the script will exit
         with a non-zero status code.
     """
-    # Create a command-line argument parser using argparse
-    parser = argparse.ArgumentParser(
-        description="Traverse all uppercase .XML files in a given directory, extract specific item values, and write to CSV."
-    )
-
-    # Add a required positional argument 'directory'
-    parser.add_argument(
-        "directory", type=str, help="The path to the directory to traverse."
-    )
-
-    # Parse the command-line arguments
-    args: argparse.Namespace = parser.parse_args()
-    base_directory_path_str: str = args.directory
-
-    # Create a Path object using pathlib
-    base_directory: pathlib.Path = pathlib.Path(base_directory_path_str)
+    base_directory: pathlib.Path = pathlib.Path(args.directory)
 
     # Check if the provided path is a valid directory
     if not base_directory.is_dir():
         logging.error(
-            f"Error: '{base_directory_path_str}' is not a valid directory. Please provide a correct directory path."
+            f"Error: '{args.directory}' is not a valid directory. Please provide a correct directory path."
         )
         sys.exit(1)  # Non-zero exit code typically indicates script failure
 
@@ -224,47 +214,88 @@ def main() -> None:
         )  # Print traceback
         # Do NOT exit immediately here, we might still write partial results
 
-    # --- Write results to CSV ---
-    if all_extracted_data:
-        logging.info(f"Extracted {len(all_extracted_data)} relevant data entries.")
-        logging.info(f"Writing results to {CSV_OUTPUT_FILENAME}")
-        try:
-            # Open the CSV file in write mode ('w')
-            # newline='' is important to prevent extra blank rows
-            # encoding='utf-8' ensures proper handling of various characters
-            with open(
-                CSV_OUTPUT_FILENAME, "w", newline="", encoding="utf-8"
-            ) as csvfile:
-                # Create a DictWriter object
-                writer = csv.DictWriter(csvfile, fieldnames=CSV_FIELDNAMES)
+    # --- Write results to CSV (if output filename base is provided) ---
+    if args.output:
+        if all_extracted_data:
+            logging.info(f"Extracted {len(all_extracted_data)} relevant data entries.")
 
-                # Write the header row
-                writer.writeheader()
+            # Get today's date and format it
+            today: date = date.today()
+            date_str: str = today.strftime("%Y-%m-%d")
 
-                # Write the data rows
-                writer.writerows(all_extracted_data)
+            # Construct the full CSV filename with the user-provided base and the date
+            csv_filename: str = f"{args.output}_{date_str}.csv"
 
-            # Log success message
-            logging.info(
-                f"Successfully wrote {len(all_extracted_data)} entries to {CSV_OUTPUT_FILENAME}"
+            logging.info(f"Writing results to {csv_filename}")
+            try:
+                # Open the CSV file in write mode ('w')
+                # newline='' is important to prevent extra blank rows
+                # encoding='utf-8' ensures proper handling of various characters
+                with open(csv_filename, "w", newline="", encoding="utf-8") as csvfile:
+                    # Create a DictWriter object using the predefined field names
+                    writer = csv.DictWriter(csvfile, fieldnames=CSV_FIELDNAMES)
+
+                    # Write the header row
+                    writer.writeheader()
+
+                    # Write the data rows
+                    writer.writerows(all_extracted_data)
+
+                # Log success message
+                logging.info(
+                    f"Successfully wrote {len(all_extracted_data)} entries to {csv_filename}"
+                )
+
+            except IOError as e:
+                logging.error(f"Error writing to CSV file {csv_filename}: {e}")
+                sys.exit(1)  # Exit on CSV writing error
+            except Exception as e:
+                logging.error(
+                    f"An unexpected error occurred while writing CSV: {e}",
+                    exc_info=True,
+                )
+                sys.exit(1)  # Exit on unexpected CSV writing error
+        else:
+            # This case happens if --output was given but no data was extracted from any file
+            logging.warning(
+                "No relevant data extracted from any files. No CSV file will be created."
             )
-
-        except IOError as e:
-            logging.error(f"Error writing to CSV file {CSV_OUTPUT_FILENAME}: {e}")
-            sys.exit(1)  # Exit on CSV writing error
-        except Exception as e:
-            logging.error(
-                f"An unexpected error occurred while writing CSV: {e}", exc_info=True
-            )
-            sys.exit(1)  # Exit on unexpected CSV writing error
     else:
-        logging.warning(
-            "No relevant data extracted from any files. No CSV file will be created or will be empty."
-        )
+        # This case happens if --output was NOT given
+        logging.info("CSV output not requested. Results were logged above.")
 
     logging.info("Script execution complete.")
 
 
-# Execute the main() function when the script is run directly
+# --- Main Execution Block ---
+# When the script is run directly, execute the following
 if __name__ == "__main__":
-    main()
+    # --- Argument Parsing ---
+    # Moved argparse setup outside of main function as requested
+    parser = argparse.ArgumentParser(
+        description="Traverse all uppercase .XML files in a given directory, extract specific item values, and optionally write to a dated CSV file."
+    )
+
+    # Add the required positional argument for the directory
+    parser.add_argument(
+        "directory", type=str, help="The path to the directory to traverse."
+    )
+
+    # Add the optional argument for the output CSV base name
+    parser.add_argument(
+        "--output",
+        type=str,
+        help='Base name for the output CSV file (e.g., "results"). If provided, results will be written to a file named <base_name>_YYYY-MM-DD.csv. If not provided, no CSV will be generated.',
+    )
+
+    # Parse the command-line arguments
+    args: argparse.Namespace = parser.parse_args()
+
+    # --- Logging Setup ---
+    # Configure logging here before calling main
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
+    # --- Call main function with parsed arguments ---
+    main(args)
