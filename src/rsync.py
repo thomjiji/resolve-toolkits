@@ -18,12 +18,13 @@ RSYNC_OPTIONS = [
     "-a",  # archive mode; equals -rlptgoD (no -H)
     "-v",  # verbose; increase verbosity
     "-i",  # itemize changes; output a change-summary for all updates
-    "-P",  # equivalent to --partial --progress; shows progress during transfer and keeps partially transferred files
+    "--partial",
+    # "-P",  # equivalent to --partial --progress; shows progress during transfer and keeps partially transferred files
     "-h",  # human-readable; output numbers in a human-readable format
-    # "--update",  # skip files that are newer on the receiver
+    "--update",  # skip files that are newer on the receiver
     "--info=progress2",  # shows detailed progress information
-    "--info=name0",  # shows the name of the current file being transferred
-    "--info=stats2",  # shows detailed statistics at the end
+    # "--info=name0",  # shows the name of the current file being transferred
+    # "--info=stats2",  # shows detailed statistics at the end
 ]
 
 
