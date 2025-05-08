@@ -2,9 +2,9 @@
 traverse_and_parse_xml.py
 
 This script traverses a given directory and its subdirectories to find all XML files.
-It extracts specific information from these XML files, specifically looking for
-<Item> tags with 'name' attributes "CaptureGammaEquation" and "CaptureColorPrimaries",
-and prints their 'value' attributes.
+It extracts specific information from these XML files by looking for <Item> tags
+whose 'name' attribute contains specific keywords (e.g., 'Gamma', 'ColorPrimaries').
+It then prints the 'value' attribute of these found items.
 
 The script uses argparse for command-line arguments, pathlib for directory traversal,
 xml.etree.ElementTree for XML parsing, and includes detailed logging output.
@@ -32,11 +32,11 @@ logging.basicConfig(
 # --- XML Processing Function ---
 def process_xml_file(file_path: pathlib.Path) -> None:
     """
-    Processes a single XML file to extract specific item values.
+    Processes a single XML file, searching for Item tags whose name contains specific keywords.
 
-    Traverses the XML tree to find all <Item> tags within the default namespace.
-    If an Item's 'name' attribute is "CaptureGammaEquation" or "CaptureColorPrimaries",
-    its 'value' attribute is logged.
+    Traverses the XML tree, looking for all <Item> tags within the default namespace.
+    If an Item's 'name' attribute contains any of the specified keywords, its actual
+    'name' and 'value' attributes are logged.
 
     Parameters
     ----------
@@ -63,57 +63,48 @@ def process_xml_file(file_path: pathlib.Path) -> None:
     logging.info(f"Processing file: {file_path}")
 
     # Define the default namespace URI for the XML
-    # When handling default namespaces in ElementTree, you need to include the full URI
-    # in the tag name or use the namespaces parameter in find/findall methods.
-    # We choose to use the namespaces parameter, which is clearer.
     namespace_uri: str = "urn:schemas-professionalDisc:nonRealTimeMeta:ver.2.20"
     # Define a prefix for the namespace; ElementTree needs this mapping for find/findall
     namespaces: Dict[str, str] = {"ns": namespace_uri}
 
-    # Define the list of 'name' attribute values for the Item tags we are looking for
-    target_item_names: List[str] = ["CaptureGammaEquation", "CaptureColorPrimaries"]
+    # Define the list of keywords to search for within the 'name' attribute of Item tags
+    target_name_keywords: List[str] = ["Gamma", "ColorPrimaries"]
 
     try:
-        # Parse the XML file using ElementTree
+        # Use ElementTree to parse the XML file
         tree: ET.ElementTree = ET.parse(file_path)
         root: ET.Element = tree.getroot()
 
         # Use findall to find all matching Item elements
         # .//ns:Item searches for all (recursively) 'Item' tags within the 'ns'
         # namespace (mapped above to the namespace_uri) anywhere below the current element (root).
-        found_values: Dict[str, str] = {}
+        # We don't pre-filter by name here, we'll check the name attribute in the loop.
+        found_items_count: int = 0
         # The type of item_element is ET.Element
         for item_element in root.findall(".//ns:Item", namespaces):
             # get() method returns None if the attribute does not exist
             item_name: Optional[str] = item_element.get("name")
             item_value: Optional[str] = item_element.get("value")
 
-            # Check if the Item's name attribute is one of our targets and value is not None
-            if item_name in target_item_names and item_value is not None:
-                logging.info(
-                    f"  Found '{item_name}': {item_value} in file '{file_path.name}'"
-                )
-                found_values[item_name] = item_value  # Store the found value
+            # Check if the Item has a name attribute and if that name contains any of our keywords
+            if item_name and any(
+                keyword in item_name for keyword in target_name_keywords
+            ):
+                # If it matches and has a value attribute, log it
+                if item_value is not None:
+                    logging.info(
+                        f"  Found relevant item in file '{file_path.name}': name='{item_name}', value='{item_value}'"
+                    )
+                    found_items_count += 1
+                else:
+                    logging.warning(
+                        f"  Found relevant item '{item_name}' in file '{file_path.name}' but it has no 'value' attribute."
+                    )
 
-        # Optional: Check if both target values were found
-        if len(found_values) == len(target_item_names):
-            logging.info(
-                f"  Successfully extracted all target values from file '{file_path.name}'."
+        if found_items_count == 0:
+            logging.warning(
+                f"  Found no items matching keywords {target_name_keywords} in file '{file_path.name}'."
             )
-        else:
-            missing = set(target_item_names) - set(found_values.keys())
-            if missing:
-                logging.warning(
-                    f"  Missing the following target items in file '{file_path.name}': {', '.join(missing)}"
-                )
-            # If found_values is not empty but the count is wrong, maybe only some were found
-            elif found_values:
-                logging.warning(
-                    f"  Only found some target items in file '{file_path.name}'."
-                )
-            # If found_values is empty
-            else:
-                logging.warning(f"  Found no target items in file '{file_path.name}'.")
 
     except FileNotFoundError:
         logging.error(f"Error: File not found: {file_path}")
@@ -156,7 +147,7 @@ def main() -> None:
     """
     # Create a command-line argument parser using argparse
     parser = argparse.ArgumentParser(
-        description="Traverse all XML files in a given directory and extract CaptureGammaEquation and CaptureColorPrimaries values."
+        description="Traverse all XML files in a given directory and extract values for items whose name contains specific keywords (e.g., Gamma, ColorPrimaries)."
     )
 
     # Add a required positional argument 'directory'
