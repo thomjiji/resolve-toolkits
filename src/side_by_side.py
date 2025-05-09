@@ -36,6 +36,9 @@ TEXT_FILL_COLOR: str = "white"  # Text color (e.g., "white", "black", "#RRGGBB")
 TEXT_OFFSET_X: int = 20  # X offset from the corner (pixels)
 TEXT_OFFSET_Y: int = 20  # Y offset from the corner (pixels)
 
+# PDF Output Settings
+PDF_QUALITY: int = 80  # Output PDF quality (0-100). Lower means smaller file size.
+
 
 # --- Logging Configuration ---
 def setup_logging(log_level: str = "INFO") -> None:
@@ -46,7 +49,7 @@ def setup_logging(log_level: str = "INFO") -> None:
     ----------
     log_level : str, optional
         The desired logging level (e.g., "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL").
-        Defaults to "INFO".
+        Defaults to "INFO.
     """
     numeric_level = getattr(logging, log_level.upper(), None)
     if not isinstance(numeric_level, int):
@@ -116,6 +119,7 @@ def process_images_to_pdf(
     adds text labels using 'magick' command, and then creates a multi-page PDF.
     Temporary files are created directly in the Current Working Directory (CWD)
     using specific prefixes and lossless format to preserve color information.
+    The final PDF output quality is controlled.
 
     Parameters
     ----------
@@ -345,7 +349,7 @@ def process_images_to_pdf(
     # 4. Combine all final temporary images into a PDF
     logging.info(
         f"All image pairs processed ({len(final_page_paths)} pairs). "
-        f"Generating final PDF: '{output_pdf}'..."
+        f"Generating final PDF: '{output_pdf}' with quality {PDF_QUALITY}..."
     )
 
     if not final_page_paths:
@@ -356,8 +360,11 @@ def process_images_to_pdf(
 
     # Build 'magick' command for PDF creation
     # Images are listed as input, and ImageMagick creates a multi-page PDF.
+    # Added -quality 80 to reduce PDF file size.
     magick_pdf_command: List[str] = [
         "magick",
+        "-quality",
+        str(PDF_QUALITY),  # Set PDF output quality
         *[str(p) for p in final_page_paths],  # Convert Path objects to strings
         str(output_pdf),  # Output PDF path
     ]
@@ -511,6 +518,10 @@ def main() -> None:
     logging.info("Script started.")
     check_magick()  # Check magick availability early
 
+    # Log the labels being used
+    logging.info(
+        f"Using labels: Ungraded='{args.ungraded_label}', Graded='{args.graded_label}'"
+    )
     # IMPORTANT: Ensure the 'Noto Sans' font is available to ImageMagick on your system.
     # You might need to install it system-wide or configure ImageMagick's font paths.
     logging.info(
