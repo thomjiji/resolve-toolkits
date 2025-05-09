@@ -1,28 +1,40 @@
 import argparse
 import logging
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Union
+from typing import List
 
 # --- Module-level Constants ---
 # Default directories and file names
 DEFAULT_UNGRADED_DIR: str = "ungraded"
 DEFAULT_GRADED_DIR: str = "graded"
-DEFAULT_OUTPUT_PDF: str = "comparison_simplified.pdf"
+DEFAULT_OUTPUT_PDF: str = "comparison_with_labels.pdf"
 
 # Input image extensions to look for (case-insensitive JPG/JPEG only)
 INPUT_IMAGE_EXTENSIONS: tuple[str, ...] = (".jpg", ".jpeg")
 
 # Temporary file settings (always lossless to preserve color info)
 # Temporary files will be created directly in the Current Working Directory (CWD).
-TEMP_FILE_PREFIX: str = (
-    "__temp_comparison_page_"  # A distinctive prefix for temporary files
+# We'll use two stages: raw combined (no text) and final page (with text)
+TEMP_RAW_COMBINED_PREFIX: str = (
+    "__temp_raw_combined_"  # Prefix for intermediate combined files
+)
+TEMP_FINAL_PAGE_PREFIX: str = (
+    "__temp_comparison_page_"  # Prefix for final temporary files (with text)
 )
 TEMP_IMAGE_FORMAT: str = "TIFF"  # TIFF is a lossless format for intermediates
 TEMP_IMAGE_EXTENSION: str = "tif"  # File extension for temporary images
+
+# Text Annotation Settings
+DEFAULT_UNGRADED_LABEL: str = "Ungraded"
+DEFAULT_GRADED_LABEL: str = "Graded"
+TEXT_FONT: str = "Noto Sans"  # Font to use for text labels
+TEXT_POINTSIZE: int = 40  # Font size
+TEXT_FILL_COLOR: str = "white"  # Text color (e.g., "white", "black", "#RRGGBB")
+TEXT_OFFSET_X: int = 20  # X offset from the corner (pixels)
+TEXT_OFFSET_Y: int = 20  # Y offset from the corner (pixels)
 
 
 # --- Logging Configuration ---
@@ -96,12 +108,14 @@ def process_images_to_pdf(
     ungraded_dir: Path,
     graded_dir: Path,
     output_pdf: Path,
+    ungraded_label: str,
+    graded_label: str,
 ) -> None:
     """
-    Processes image pairs from two directories (assumed JPG/JPEG), combines them side-by-side
-    using 'magick' command, and then creates a multi-page PDF.
+    Processes image pairs from two directories (assumed JPG/JPEG), combines them side-by-side,
+    adds text labels using 'magick' command, and then creates a multi-page PDF.
     Temporary files are created directly in the Current Working Directory (CWD)
-    using a specific prefix and lossless format to preserve color information.
+    using specific prefixes and lossless format to preserve color information.
 
     Parameters
     ----------
@@ -111,6 +125,10 @@ def process_images_to_pdf(
         Path to the directory containing graded (color-corrected) JPG/JPEG images.
     output_pdf : Path
         Path for the output PDF file.
+    ungraded_label : str
+        Text label to add to the top-left of the ungraded image in the pair.
+    graded_label : str
+        Text label to add to the top-right of the graded image in the pair.
 
     Returns
     -------
@@ -121,7 +139,7 @@ def process_images_to_pdf(
     SystemExit
         If essential directories are not found, or if ImageMagick operations fail.
     """
-    logging.info("Starting image comparison PDF generation.")
+    logging.info("Starting image comparison PDF generation with text labels.")
 
     # 1. Validate input directories
     if not ungraded_dir.is_dir():
@@ -153,7 +171,7 @@ def process_images_to_pdf(
         logging.exception(f"Error reading files from directory '{ungraded_dir}': {e}")
         sys.exit(1)
 
-    combined_image_paths: List[Path] = []
+    final_page_paths: List[Path] = []
     logging.info(
         f"Found {len(filenames)} JPG/JPEG files in '{ungraded_dir}'. Processing image pairs..."
     )
@@ -161,7 +179,7 @@ def process_images_to_pdf(
     # Get the current working directory for temporary files
     cwd: Path = Path.cwd()
 
-    # 3. Process each image pair
+    # 3. Process each image pair: Combine and Add Text
     for i, filename in enumerate(filenames):
         ungraded_path: Path = ungraded_dir / filename
         graded_path: Path = graded_dir / filename
@@ -179,12 +197,10 @@ def process_images_to_pdf(
 
         logging.info(f"Processing pair {i + 1}/{len(filenames)}: '{filename}'")
 
-        # Define temporary combined image path in CWD with a distinctive prefix
+        # --- Stage 1: Combine Images Horizontally ---
         base_filename_no_ext: str = ungraded_path.stem
-        temp_combined_filename: str = (
-            f"{TEMP_FILE_PREFIX}{i:04d}_{base_filename_no_ext}.{TEMP_IMAGE_EXTENSION}"
-        )
-        temp_combined_path: Path = cwd / temp_combined_filename
+        temp_raw_combined_filename: str = f"{TEMP_RAW_COMBINED_PREFIX}{i:04d}_{base_filename_no_ext}.{TEMP_IMAGE_EXTENSION}"
+        temp_raw_combined_path: Path = cwd / temp_raw_combined_filename
 
         # Build 'magick' command for horizontal append
         # Using +append: Images are stacked horizontally. If heights differ, ImageMagick pads.
@@ -195,30 +211,28 @@ def process_images_to_pdf(
             str(ungraded_path),  # Convert Path to string for subprocess
             str(graded_path),  # Convert Path to string for subprocess
             "+append",  # Horizontal append
-            str(temp_combined_path),  # Output path (lossless TIFF)
+            str(temp_raw_combined_path),  # Output path (lossless TIFF)
         ]
 
         try:
             logging.debug(
                 f"Executing append command: {' '.join(magick_append_command)}"
             )
-            process: subprocess.CompletedProcess = subprocess.run(
+            process_append: subprocess.CompletedProcess = subprocess.run(
                 magick_append_command, check=True, capture_output=True, text=True
             )
-            logging.debug(f"Magick append stdout: {process.stdout.strip()}")
-            logging.debug(f"Magick append stderr: {process.stderr.strip()}")
-            combined_image_paths.append(temp_combined_path)
+            logging.debug(f"Magick append stdout: {process_append.stdout.strip()}")
+            logging.debug(f"Magick append stderr: {process_append.stderr.strip()}")
+
         except subprocess.CalledProcessError as e:
             logging.error(
                 f"Error: Failed to append images for '{filename}'. "
                 f"Magick command exited with code {e.returncode}. "
                 f"Stdout: {e.stdout.strip()} | Stderr: {e.stderr.strip()}"
             )
-            # If appending fails for one pair, log the error and continue with the next pair.
+            # If appending fails, skip adding text and processing this pair further.
             continue
         except FileNotFoundError:
-            # This case should ideally be caught by check_magick() early on,
-            # but included here as a safeguard.
             logging.error(
                 f"Error: 'magick' command not found during append for '{filename}'. Exiting."
             )
@@ -227,18 +241,116 @@ def process_images_to_pdf(
             logging.exception(
                 f"An unexpected error occurred during image append for '{filename}': {e}"
             )
-            # Log the exception and continue with the next pair.
             continue
 
-    # 4. Combine all temporary images into a PDF
+        # --- Stage 2: Add Text Annotations to the Combined Image ---
+        temp_final_page_filename: str = f"{TEMP_FINAL_PAGE_PREFIX}{i:04d}_{base_filename_no_ext}.{TEMP_IMAGE_EXTENSION}"
+        temp_final_page_path: Path = cwd / temp_final_page_filename
+
+        # Build 'magick' command to add text
+        # Read the raw combined image, add annotations, and save to the final temporary path.
+        # -font: Specifies the font. Make sure "Noto Sans" is available to ImageMagick.
+        # -pointsize: Sets the font size.
+        # -fill: Sets the text color.
+        # -gravity northwest: Sets the origin for the next annotation to the top-left.
+        # -annotate +X+Y: Draws text with offset from the gravity origin.
+        # -gravity northeast: Sets the origin for the next annotation to the top-right.
+        magick_annotate_command: List[str] = [
+            "magick",
+            str(temp_raw_combined_path),  # Input: the raw combined image
+            "-font",
+            TEXT_FONT,
+            "-pointsize",
+            str(TEXT_POINTSIZE),
+            "-fill",
+            TEXT_FILL_COLOR,
+            "-gravity",
+            "northwest",
+            "-annotate",
+            f"+{TEXT_OFFSET_X}+{TEXT_OFFSET_Y}",
+            ungraded_label,
+            "-gravity",
+            "northeast",
+            "-annotate",
+            f"+{TEXT_OFFSET_X}+{TEXT_OFFSET_Y}",
+            graded_label,
+            str(
+                temp_final_page_path
+            ),  # Output: the final temporary image for this page
+        ]
+
+        try:
+            logging.debug(
+                f"Executing annotate command: {' '.join(magick_annotate_command)}"
+            )
+            process_annotate: subprocess.CompletedProcess = subprocess.run(
+                magick_annotate_command, check=True, capture_output=True, text=True
+            )
+            logging.debug(f"Magick annotate stdout: {process_annotate.stdout.strip()}")
+            logging.debug(f"Magick annotate stderr: {process_annotate.stderr.strip()}")
+            final_page_paths.append(temp_final_page_path)
+
+        except subprocess.CalledProcessError as e:
+            logging.error(
+                f"Error: Failed to add text annotations to combined image for '{filename}'. "
+                f"Magick command exited with code {e.returncode}. "
+                f"Stdout: {e.stdout.strip()} | Stderr: {e.stderr.strip()}"
+            )
+            # If annotation fails, remove the raw combined file and skip this pair.
+            if temp_raw_combined_path.is_file():
+                try:
+                    temp_raw_combined_path.unlink()
+                    logging.debug(
+                        f"Cleaned up raw combined file after annotation failure: {temp_raw_combined_path}"
+                    )
+                except OSError as cleanup_e:
+                    logging.error(
+                        f"Error cleaning up raw combined file '{temp_raw_combined_path}': {cleanup_e}"
+                    )
+            continue  # Continue to next pair
+        except FileNotFoundError:
+            logging.error(
+                f"Error: 'magick' command not found during annotation for '{filename}'. Exiting."
+            )
+            sys.exit(1)
+        except Exception as e:
+            logging.exception(
+                f"An unexpected error occurred during image annotation for '{filename}': {e}"
+            )
+            # Log the exception and continue with the next pair.
+            if temp_raw_combined_path.is_file():
+                try:
+                    temp_raw_combined_path.unlink()
+                    logging.debug(
+                        f"Cleaned up raw combined file after annotation failure: {temp_raw_combined_path}"
+                    )
+                except OSError as cleanup_e:
+                    logging.error(
+                        f"Error cleaning up raw combined file '{temp_raw_combined_path}': {cleanup_e}"
+                    )
+            continue
+
+        # --- Clean up the intermediate raw combined file ---
+        if temp_raw_combined_path.is_file():
+            try:
+                temp_raw_combined_path.unlink()
+                logging.debug(
+                    f"Cleaned up intermediate raw combined file: {temp_raw_combined_path}"
+                )
+            except OSError as e:
+                logging.error(
+                    f"Error cleaning up intermediate raw combined file '{temp_raw_combined_path}': {e}"
+                )
+
+    # 4. Combine all final temporary images into a PDF
     logging.info(
-        f"All image pairs processed ({len(combined_image_paths)} pairs). "
+        f"All image pairs processed ({len(final_page_paths)} pairs). "
         f"Generating final PDF: '{output_pdf}'..."
     )
 
-    if not combined_image_paths:
+    if not final_page_paths:
         logging.warning(
-            "No combined images were successfully created. No PDF will be generated."
+            "No final combined images with labels were successfully created. No PDF will be generated."
         )
         return
 
@@ -246,7 +358,7 @@ def process_images_to_pdf(
     # Images are listed as input, and ImageMagick creates a multi-page PDF.
     magick_pdf_command: List[str] = [
         "magick",
-        *[str(p) for p in combined_image_paths],  # Convert Path objects to strings
+        *[str(p) for p in final_page_paths],  # Convert Path objects to strings
         str(output_pdf),  # Output PDF path
     ]
 
@@ -255,12 +367,12 @@ def process_images_to_pdf(
         logging.debug(
             f"Executing PDF generation command: {' '.join(magick_pdf_command)}"
         )
-        process: subprocess.CompletedProcess = subprocess.run(
+        process_pdf: subprocess.CompletedProcess = subprocess.run(
             magick_pdf_command, check=True, capture_output=True, text=True
         )
         logging.info(f"PDF '{output_pdf}' successfully generated.")
-        logging.debug(f"Magick PDF stdout: {process.stdout.strip()}")
-        logging.debug(f"Magick PDF stderr: {process.stderr.strip()}")
+        logging.debug(f"Magick PDF stdout: {process_pdf.stdout.strip()}")
+        logging.debug(f"Magick PDF stderr: {process_pdf.stderr.strip()}")
         pdf_generation_successful = True
     except subprocess.CalledProcessError as e:
         logging.error(
@@ -271,24 +383,22 @@ def process_images_to_pdf(
     except FileNotFoundError:
         # This case should ideally be caught by check_magick() early on.
         logging.error(
-            f"Error: 'magick' command not found during PDF generation. Exiting."
+            "Error: 'magick' command not found during PDF generation. Exiting."
         )
         sys.exit(1)
     except Exception as e:
         logging.exception(f"An unexpected error occurred during PDF generation: {e}")
     finally:
         # 5. Clean up temporary files from CWD
-        if (
-            combined_image_paths
-        ):  # Only attempt cleanup if files were intended to be generated
+        if final_page_paths:  # Only attempt cleanup if final temporary files were intended to be generated
             if pdf_generation_successful:
                 logging.info("Cleaning up temporary files from CWD...")
-                for temp_file_path in combined_image_paths:
+                for temp_file_path in final_page_paths:
                     try:
                         # Only delete files that actually exist and match the expected pattern
                         if (
                             temp_file_path.is_file()
-                            and temp_file_path.name.startswith(TEMP_FILE_PREFIX)
+                            and temp_file_path.name.startswith(TEMP_FINAL_PAGE_PREFIX)
                             and temp_file_path.suffix.lower()
                             == f".{TEMP_IMAGE_EXTENSION}".lower()
                         ):
@@ -314,6 +424,21 @@ def process_images_to_pdf(
                 logging.warning(
                     f"PDF generation failed. Temporary files retained in '{cwd}' for debugging."
                 )
+        # Also clean up any intermediate raw combined files that might be left due to errors before annotation
+        logging.debug(
+            "Attempting to clean up any remaining intermediate raw combined files..."
+        )
+        for item in cwd.glob(f"{TEMP_RAW_COMBINED_PREFIX}*.{TEMP_IMAGE_EXTENSION}"):
+            if item.is_file():
+                try:
+                    item.unlink()
+                    logging.debug(
+                        f"Cleaned up remaining intermediate raw combined file: {item}"
+                    )
+                except OSError as e:
+                    logging.error(
+                        f"Error cleaning up remaining intermediate raw combined file '{item}': {e}"
+                    )
 
 
 # --- Argument Parsing ---
@@ -328,7 +453,7 @@ def parse_arguments() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(
         description="Generate a side-by-side PDF comparison of ungraded and graded JPG images "
-        "using ImageMagick, preserving original color information. "
+        "with text labels, using ImageMagick to preserve color information. "
         "Temporary files are created in the current working directory (CWD)."
     )
     parser.add_argument(
@@ -350,6 +475,18 @@ def parse_arguments() -> argparse.Namespace:
         type=Path,
         default=DEFAULT_OUTPUT_PDF,
         help=f"Path for the output PDF file. Defaults to '{DEFAULT_OUTPUT_PDF}'.",
+    )
+    parser.add_argument(
+        "--ungraded-label",
+        type=str,
+        default=DEFAULT_UNGRADED_LABEL,
+        help=f"Text label for the ungraded images (top-left). Defaults to '{DEFAULT_UNGRADED_LABEL}'.",
+    )
+    parser.add_argument(
+        "--graded-label",
+        type=str,
+        default=DEFAULT_GRADED_LABEL,
+        help=f"Text label for the graded images (top-right). Defaults to '{DEFAULT_GRADED_LABEL}'.",
     )
     parser.add_argument(
         "--log-level",
@@ -374,11 +511,19 @@ def main() -> None:
     logging.info("Script started.")
     check_magick()  # Check magick availability early
 
+    # IMPORTANT: Ensure the 'Noto Sans' font is available to ImageMagick on your system.
+    # You might need to install it system-wide or configure ImageMagick's font paths.
+    logging.info(
+        f"Using font '{TEXT_FONT}' for text labels. Ensure this font is available to ImageMagick."
+    )
+
     try:
         process_images_to_pdf(
             ungraded_dir=args.ungraded_dir,
             graded_dir=args.graded_dir,
             output_pdf=args.output_pdf,
+            ungraded_label=args.ungraded_label,
+            graded_label=args.graded_label,
         )
         logging.info("Script finished successfully.")
     except SystemExit as e:
