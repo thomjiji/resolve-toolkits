@@ -10,12 +10,12 @@ from typing import List
 # Default directories and file names
 DEFAULT_UNGRADED_DIR: str = "ungraded"
 DEFAULT_GRADED_DIR: str = "graded"
-DEFAULT_OUTPUT_PDF: str = "comparison_with_labels.pdf"
+DEFAULT_OUTPUT_PDF: str = "comparison_with_labels_lowqual_temps.pdf"  # Changed default name to reflect early quality reduction
 
 # Input image extensions to look for (case-insensitive JPG/JPEG only)
 INPUT_IMAGE_EXTENSIONS: tuple[str, ...] = (".jpg", ".jpeg")
 
-# Temporary file settings (always lossless to preserve color info)
+# Temporary file settings (will now use lossy compression for smaller files)
 # Temporary files will be created directly in the Current Working Directory (CWD).
 # We'll use two stages: raw combined (no text) and final page (with text)
 TEMP_RAW_COMBINED_PREFIX: str = (
@@ -24,8 +24,10 @@ TEMP_RAW_COMBINED_PREFIX: str = (
 TEMP_FINAL_PAGE_PREFIX: str = (
     "__temp_comparison_page_"  # Prefix for final temporary files (with text)
 )
-TEMP_IMAGE_FORMAT: str = "TIFF"  # TIFF is a lossless format for intermediates
-TEMP_IMAGE_EXTENSION: str = "tif"  # File extension for temporary images
+# NOTE: Changing temporary format to JPEG for quality reduction at append stage.
+# This introduces lossy compression earlier, potentially altering color information.
+TEMP_IMAGE_FORMAT: str = "JPEG"
+TEMP_IMAGE_EXTENSION: str = "jpg"
 
 # Text Annotation Settings
 DEFAULT_UNGRADED_LABEL: str = "Ungraded"
@@ -36,8 +38,12 @@ TEXT_FILL_COLOR: str = "white"  # Text color (e.g., "white", "black", "#RRGGBB")
 TEXT_OFFSET_X: int = 20  # X offset from the corner (pixels)
 TEXT_OFFSET_Y: int = 20  # Y offset from the corner (pixels)
 
-# PDF Output Settings
-PDF_QUALITY: int = 80  # Output PDF quality (0-100). Lower means smaller file size.
+# Output Quality Setting (Applied during temporary file creation)
+# This quality setting will now affect the temporary files directly,
+# using lossy compression (JPEG).
+IMAGE_QUALITY: int = (
+    80  # Output image quality (0-100). Lower means smaller file size and more loss.
+)
 
 
 # --- Logging Configuration ---
@@ -49,7 +55,7 @@ def setup_logging(log_level: str = "INFO") -> None:
     ----------
     log_level : str, optional
         The desired logging level (e.g., "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL").
-        Defaults to "INFO.
+        Defaults to "INFO".
     """
     numeric_level = getattr(logging, log_level.upper(), None)
     if not isinstance(numeric_level, int):
@@ -118,8 +124,8 @@ def process_images_to_pdf(
     Processes image pairs from two directories (assumed JPG/JPEG), combines them side-by-side,
     adds text labels using 'magick' command, and then creates a multi-page PDF.
     Temporary files are created directly in the Current Working Directory (CWD)
-    using specific prefixes and lossless format to preserve color information.
-    The final PDF output quality is controlled.
+    using specific prefixes and lossy format (JPEG) with controlled quality.
+    This approach reduces temporary file size but may alter original color information.
 
     Parameters
     ----------
@@ -143,7 +149,14 @@ def process_images_to_pdf(
     SystemExit
         If essential directories are not found, or if ImageMagick operations fail.
     """
-    logging.info("Starting image comparison PDF generation with text labels.")
+    logging.info(
+        "Starting image comparison PDF generation with text labels and early quality reduction."
+    )
+    logging.warning(
+        f"NOTE: Applying image quality {IMAGE_QUALITY} during temporary file creation ({TEMP_IMAGE_FORMAT}). "
+        "This uses lossy compression and may alter original color information compared to source files. "
+        "For strict color fidelity review, consider using a lossless temporary format."
+    )
 
     # 1. Validate input directories
     if not ungraded_dir.is_dir():
@@ -201,21 +214,22 @@ def process_images_to_pdf(
 
         logging.info(f"Processing pair {i + 1}/{len(filenames)}: '{filename}'")
 
-        # --- Stage 1: Combine Images Horizontally ---
+        # --- Stage 1: Combine Images Horizontally (with quality reduction) ---
         base_filename_no_ext: str = ungraded_path.stem
+        # Temporary file will be JPEG with quality applied
         temp_raw_combined_filename: str = f"{TEMP_RAW_COMBINED_PREFIX}{i:04d}_{base_filename_no_ext}.{TEMP_IMAGE_EXTENSION}"
         temp_raw_combined_path: Path = cwd / temp_raw_combined_filename
 
         # Build 'magick' command for horizontal append
-        # Using +append: Images are stacked horizontally. If heights differ, ImageMagick pads.
-        # This approach aims to preserve original pixel data as much as possible by
-        # avoiding resizing or resampling which could alter color information.
+        # Added -quality here to affect the temporary file size and compression.
         magick_append_command: List[str] = [
             "magick",
             str(ungraded_path),  # Convert Path to string for subprocess
             str(graded_path),  # Convert Path to string for subprocess
             "+append",  # Horizontal append
-            str(temp_raw_combined_path),  # Output path (lossless TIFF)
+            "-quality",
+            str(IMAGE_QUALITY),  # Apply quality here
+            str(temp_raw_combined_path),  # Output path (lossy JPEG)
         ]
 
         try:
@@ -248,20 +262,18 @@ def process_images_to_pdf(
             continue
 
         # --- Stage 2: Add Text Annotations to the Combined Image ---
+        # This step reads the lossy JPEG and saves it as another lossy JPEG (or TIFF,
+        # but keeping it JPEG maintains the smaller file size).
         temp_final_page_filename: str = f"{TEMP_FINAL_PAGE_PREFIX}{i:04d}_{base_filename_no_ext}.{TEMP_IMAGE_EXTENSION}"
         temp_final_page_path: Path = cwd / temp_final_page_filename
 
         # Build 'magick' command to add text
-        # Read the raw combined image, add annotations, and save to the final temporary path.
-        # -font: Specifies the font. Make sure "Noto Sans" is available to ImageMagick.
-        # -pointsize: Sets the font size.
-        # -fill: Sets the text color.
-        # -gravity northwest: Sets the origin for the next annotation to the top-left.
-        # -annotate +X+Y: Draws text with offset from the gravity origin.
-        # -gravity northeast: Sets the origin for the next annotation to the top-right.
+        # Read the raw combined (lossy JPEG) image, add annotations, and save.
+        # We re-apply quality here to ensure the output is also a JPEG with the desired quality,
+        # although the primary loss happened in the append step.
         magick_annotate_command: List[str] = [
             "magick",
-            str(temp_raw_combined_path),  # Input: the raw combined image
+            str(temp_raw_combined_path),  # Input: the raw combined image (lossy JPEG)
             "-font",
             TEXT_FONT,
             "-pointsize",
@@ -278,9 +290,11 @@ def process_images_to_pdf(
             "-annotate",
             f"+{TEXT_OFFSET_X}+{TEXT_OFFSET_Y}",
             graded_label,
+            "-quality",
+            str(IMAGE_QUALITY),  # Re-apply quality for the output temporary file
             str(
                 temp_final_page_path
-            ),  # Output: the final temporary image for this page
+            ),  # Output: the final temporary image for this page (lossy JPEG)
         ]
 
         try:
@@ -335,6 +349,7 @@ def process_images_to_pdf(
             continue
 
         # --- Clean up the intermediate raw combined file ---
+        # This file is no longer needed after annotation
         if temp_raw_combined_path.is_file():
             try:
                 temp_raw_combined_path.unlink()
@@ -347,9 +362,12 @@ def process_images_to_pdf(
                 )
 
     # 4. Combine all final temporary images into a PDF
+    # The quality is already set in the temporary JPEG files.
+    # We still include -quality here, but its effect might be less pronounced
+    # than when applied to lossless inputs. It controls the final PDF compression.
     logging.info(
         f"All image pairs processed ({len(final_page_paths)} pairs). "
-        f"Generating final PDF: '{output_pdf}' with quality {PDF_QUALITY}..."
+        f"Generating final PDF: '{output_pdf}' with quality {IMAGE_QUALITY} (based on temporary files)..."
     )
 
     if not final_page_paths:
@@ -360,12 +378,12 @@ def process_images_to_pdf(
 
     # Build 'magick' command for PDF creation
     # Images are listed as input, and ImageMagick creates a multi-page PDF.
-    # Added -quality 80 to reduce PDF file size.
+    # -quality here affects the final PDF compression, reading from the temporary JPEGs.
     magick_pdf_command: List[str] = [
         "magick",
-        "-quality",
-        str(PDF_QUALITY),  # Set PDF output quality
         *[str(p) for p in final_page_paths],  # Convert Path objects to strings
+        "-quality",
+        str(IMAGE_QUALITY),  # Set PDF output quality (reads from lossy temps)
         str(output_pdf),  # Output PDF path
     ]
 
@@ -432,6 +450,7 @@ def process_images_to_pdf(
                     f"PDF generation failed. Temporary files retained in '{cwd}' for debugging."
                 )
         # Also clean up any intermediate raw combined files that might be left due to errors before annotation
+        # These are the files generated by the first append step.
         logging.debug(
             "Attempting to clean up any remaining intermediate raw combined files..."
         )
@@ -458,9 +477,13 @@ def parse_arguments() -> argparse.Namespace:
     argparse.Namespace
         An object containing the parsed arguments.
     """
+    # Fix: Declare global IMAGE_QUALITY before its first use in this function
+    global IMAGE_QUALITY
+
     parser = argparse.ArgumentParser(
         description="Generate a side-by-side PDF comparison of ungraded and graded JPG images "
-        "with text labels, using ImageMagick to preserve color information. "
+        "with text labels, using ImageMagick. Applies quality reduction during temporary "
+        "file creation to reduce their size, which may alter original color information. "
         "Temporary files are created in the current working directory (CWD)."
     )
     parser.add_argument(
@@ -496,6 +519,16 @@ def parse_arguments() -> argparse.Namespace:
         help=f"Text label for the graded images (top-right). Defaults to '{DEFAULT_GRADED_LABEL}'.",
     )
     parser.add_argument(
+        "--quality",
+        type=int,
+        default=IMAGE_QUALITY,  # Use the module-level default
+        choices=range(0, 101),  # Quality is usually 0-100
+        metavar="[0-100]",
+        help=f"Output image quality (0-100) applied during temporary file creation (using JPEG). "
+        f"Lower quality reduces file size but increases loss. Defaults to {IMAGE_QUALITY}. "
+        "Note: This affects temporary files and may alter original color information.",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="INFO",
@@ -504,6 +537,11 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     args = parser.parse_args()
+
+    # Update the module-level IMAGE_QUALITY based on parsed arguments
+    # This is done AFTER parsing, so the default value is correctly used if not provided
+    IMAGE_QUALITY = args.quality
+
     return args
 
 
