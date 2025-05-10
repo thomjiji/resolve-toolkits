@@ -20,7 +20,7 @@ RSYNC_OPTIONS = [
     "-i",  # itemize changes; output a change-summary for all updates
     "-P",  # equivalent to --partial --progress; shows progress during transfer and keeps partially transferred files
     "-h",  # human-readable; output numbers in a human-readable format
-    "--update",  # skip files that are newer on the receiver
+    # "--update",  # skip files that are newer on the receiver
     # "--info=name0",  # shows the name of the current file being transferred
     # "--info=stats2",  # shows detailed statistics at the end
 ]
@@ -109,15 +109,6 @@ def execute_rsync(
         f"Synchronizing from '[{sources_colored}]' to '{target_colored}' (action: {action})"
     )
 
-    # Ensure directory sources end with '/'
-    # processed_sources = []
-    # for src in sources:
-    #     src_path = Path(src)
-    #     if src_path.is_dir():
-    #         processed_sources.append(str(src_path) + "/")
-    #     else:
-    #         processed_sources.append(str(src_path))
-
     cmd = build_rsync_cmd(action, checksum=checksum, log_file_name=log_file_name)
     cmd += sources
     cmd.append(target)
@@ -193,17 +184,6 @@ def main():
         logging.info(f"Logging enabled. Log file: {log_file_name}")
     else:
         logging.info("Logging disabled.")
-
-    # For each input path, sync to the same target
-    # for source in args.inputs:
-    #     logging.info(f"Processing input: {source}")
-    #     execute_rsync(
-    #         source,
-    #         args.output,
-    #         args.action,
-    #         checksum=args.checksum,
-    #         log_file_name=log_file_name,
-    #     )
 
     execute_rsync(
         args.inputs,
