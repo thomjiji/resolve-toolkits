@@ -1,30 +1,31 @@
 import argparse
 import logging
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
-from typing import List
 
 # --- Module-level Constants ---
 # Default directories and file names
 DEFAULT_UNGRADED_DIR: str = "ungraded"
 DEFAULT_GRADED_DIR: str = "graded"
-DEFAULT_OUTPUT_PDF: str = "comparison_with_labels_lowqual_temps.pdf"  # Changed default name to reflect early quality reduction
+DEFAULT_OUTPUT_PDF: str = "comparison_with_labels_lowqual_temps.pdf"
 
 # Input image extensions to look for (case-insensitive JPG/JPEG only)
 INPUT_IMAGE_EXTENSIONS: tuple[str, ...] = (".jpg", ".jpeg")
 
 # Temporary file settings (will now use lossy compression for smaller files)
-# Temporary files will be created directly in the Current Working Directory (CWD).
-# We'll use two stages: raw combined (no text) and final page (with text)
+# Temporary files will be created in a unique subdirectory within the system's temporary directory.
+TEMP_DIR_PREFIX: str = "image_comparison_temp_"  # Prefix for the temporary subdirectory
 TEMP_RAW_COMBINED_PREFIX: str = (
-    "__temp_raw_combined_"  # Prefix for intermediate combined files
+    "raw_combined_"  # Prefix for intermediate combined files
 )
 TEMP_FINAL_PAGE_PREFIX: str = (
-    "__temp_comparison_page_"  # Prefix for final temporary files (with text)
+    "final_page_"  # Prefix for final temporary files (with text)
 )
-# NOTE: Changing temporary format to JPEG for quality reduction at append stage.
+# NOTE: Using JPEG for temporary format for quality reduction at append stage.
 # This introduces lossy compression earlier, potentially altering color information.
 TEMP_IMAGE_FORMAT: str = "JPEG"
 TEMP_IMAGE_EXTENSION: str = "jpg"
@@ -33,7 +34,7 @@ TEMP_IMAGE_EXTENSION: str = "jpg"
 DEFAULT_UNGRADED_LABEL: str = "Ungraded"
 DEFAULT_GRADED_LABEL: str = "Graded"
 TEXT_FONT: str = "Noto Sans"  # Font to use for text labels
-TEXT_POINTSIZE: int = 40  # Font size
+TEXT_POINTSIZE: int = 100  # Font size
 TEXT_FILL_COLOR: str = "white"  # Text color (e.g., "white", "black", "#RRGGBB")
 TEXT_OFFSET_X: int = 20  # X offset from the corner (pixels)
 TEXT_OFFSET_Y: int = 20  # Y offset from the corner (pixels)
@@ -123,7 +124,7 @@ def process_images_to_pdf(
     """
     Processes image pairs from two directories (assumed JPG/JPEG), combines them side-by-side,
     adds text labels using 'magick' command, and then creates a multi-page PDF.
-    Temporary files are created directly in the Current Working Directory (CWD)
+    Temporary files are created in a unique subdirectory within the system's temporary directory
     using specific prefixes and lossy format (JPEG) with controlled quality.
     This approach reduces temporary file size but may alter original color information.
 
@@ -170,7 +171,7 @@ def process_images_to_pdf(
     try:
         # Get all files in the ungraded directory, filter by JPG/JPEG extension (case-insensitive),
         # and sort them naturally.
-        filenames: List[str] = sorted(
+        filenames: list[str] = sorted(
             [
                 f
                 for f in os.listdir(ungraded_dir)
@@ -188,15 +189,38 @@ def process_images_to_pdf(
         logging.exception(f"Error reading files from directory '{ungraded_dir}': {e}")
         sys.exit(1)
 
-    final_page_paths: List[Path] = []
+    # 3. Create a temporary directory within the system temp location
+    # Use process ID to make the directory name more unique
+    temp_dir: Path = Path(tempfile.gettempdir()) / f"{TEMP_DIR_PREFIX}{os.getpid()}"
+    logging.info(f"Creating temporary directory: '{temp_dir}'")
+    try:
+        # exist_ok=False will raise FileExistsError if the directory already exists,
+        # which helps prevent accidental cleanup of unrelated directories.
+        temp_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        # If it exists, it might be from a previous failed run. Try to clean it up first.
+        logging.warning(
+            f"Temporary directory '{temp_dir}' already exists. Attempting to clean it up."
+        )
+        try:
+            shutil.rmtree(temp_dir)
+            temp_dir.mkdir(parents=True, exist_ok=False)
+            logging.info(f"Cleaned up and recreated temporary directory: '{temp_dir}'")
+        except Exception as e:
+            logging.exception(
+                f"Error cleaning up or recreating temporary directory '{temp_dir}': {e}"
+            )
+            sys.exit(1)
+    except OSError as e:
+        logging.exception(f"Error creating temporary directory '{temp_dir}': {e}")
+        sys.exit(1)
+
+    final_page_paths: list[Path] = []
     logging.info(
         f"Found {len(filenames)} JPG/JPEG files in '{ungraded_dir}'. Processing image pairs..."
     )
 
-    # Get the current working directory for temporary files
-    cwd: Path = Path.cwd()
-
-    # 3. Process each image pair: Combine and Add Text
+    # 4. Process each image pair: Combine and Add Text
     for i, filename in enumerate(filenames):
         ungraded_path: Path = ungraded_dir / filename
         graded_path: Path = graded_dir / filename
@@ -216,13 +240,13 @@ def process_images_to_pdf(
 
         # --- Stage 1: Combine Images Horizontally (with quality reduction) ---
         base_filename_no_ext: str = ungraded_path.stem
-        # Temporary file will be JPEG with quality applied
+        # Temporary file will be JPEG with quality applied, inside the temporary directory
         temp_raw_combined_filename: str = f"{TEMP_RAW_COMBINED_PREFIX}{i:04d}_{base_filename_no_ext}.{TEMP_IMAGE_EXTENSION}"
-        temp_raw_combined_path: Path = cwd / temp_raw_combined_filename
+        temp_raw_combined_path: Path = temp_dir / temp_raw_combined_filename
 
         # Build 'magick' command for horizontal append
         # Added -quality here to affect the temporary file size and compression.
-        magick_append_command: List[str] = [
+        magick_append_command: list[str] = [
             "magick",
             str(ungraded_path),  # Convert Path to string for subprocess
             str(graded_path),  # Convert Path to string for subprocess
@@ -254,6 +278,8 @@ def process_images_to_pdf(
             logging.error(
                 f"Error: 'magick' command not found during append for '{filename}'. Exiting."
             )
+            # Clean up the temporary directory before exiting
+            shutil.rmtree(temp_dir, ignore_errors=True)
             sys.exit(1)
         except Exception as e:
             logging.exception(
@@ -265,13 +291,15 @@ def process_images_to_pdf(
         # This step reads the lossy JPEG and saves it as another lossy JPEG (or TIFF,
         # but keeping it JPEG maintains the smaller file size).
         temp_final_page_filename: str = f"{TEMP_FINAL_PAGE_PREFIX}{i:04d}_{base_filename_no_ext}.{TEMP_IMAGE_EXTENSION}"
-        temp_final_page_path: Path = cwd / temp_final_page_filename
+        temp_final_page_path: Path = (
+            temp_dir / temp_final_page_filename
+        )  # Save in temp_dir
 
         # Build 'magick' command to add text
         # Read the raw combined (lossy JPEG) image, add annotations, and save.
         # We re-apply quality here to ensure the output is also a JPEG with the desired quality,
         # although the primary loss happened in the append step.
-        magick_annotate_command: List[str] = [
+        magick_annotate_command: list[str] = [
             "magick",
             str(temp_raw_combined_path),  # Input: the raw combined image (lossy JPEG)
             "-font",
@@ -330,6 +358,8 @@ def process_images_to_pdf(
             logging.error(
                 f"Error: 'magick' command not found during annotation for '{filename}'. Exiting."
             )
+            # Clean up the temporary directory before exiting
+            shutil.rmtree(temp_dir, ignore_errors=True)
             sys.exit(1)
         except Exception as e:
             logging.exception(
@@ -361,7 +391,7 @@ def process_images_to_pdf(
                     f"Error cleaning up intermediate raw combined file '{temp_raw_combined_path}': {e}"
                 )
 
-    # 4. Combine all final temporary images into a PDF
+    # 5. Combine all final temporary images into a PDF
     # The quality is already set in the temporary JPEG files.
     # We still include -quality here, but its effect might be less pronounced
     # than when applied to lossless inputs. It controls the final PDF compression.
@@ -374,12 +404,14 @@ def process_images_to_pdf(
         logging.warning(
             "No final combined images with labels were successfully created. No PDF will be generated."
         )
+        # Clean up the temporary directory
+        shutil.rmtree(temp_dir, ignore_errors=True)
         return
 
     # Build 'magick' command for PDF creation
     # Images are listed as input, and ImageMagick creates a multi-page PDF.
     # -quality here affects the final PDF compression, reading from the temporary JPEGs.
-    magick_pdf_command: List[str] = [
+    magick_pdf_command: list[str] = [
         "magick",
         *[str(p) for p in final_page_paths],  # Convert Path objects to strings
         "-quality",
@@ -387,6 +419,7 @@ def process_images_to_pdf(
         str(output_pdf),  # Output PDF path
     ]
 
+    # Initialize pdf_generation_successful before the try block
     pdf_generation_successful: bool = False
     try:
         logging.debug(
@@ -398,73 +431,44 @@ def process_images_to_pdf(
         logging.info(f"PDF '{output_pdf}' successfully generated.")
         logging.debug(f"Magick PDF stdout: {process_pdf.stdout.strip()}")
         logging.debug(f"Magick PDF stderr: {process_pdf.stderr.strip()}")
-        pdf_generation_successful = True
+        pdf_generation_successful = (
+            True  # Set to True only on successful PDF generation
+        )
     except subprocess.CalledProcessError as e:
         logging.error(
             f"Error: Failed to generate PDF '{output_pdf}'. "
             f"Magick command exited with code {e.returncode}. "
             f"Stdout: {e.stdout.strip()} | Stderr: {e.stderr.strip()}"
         )
+        # pdf_generation_successful remains False
     except FileNotFoundError:
         # This case should ideally be caught by check_magick() early on.
         logging.error(
             "Error: 'magick' command not found during PDF generation. Exiting."
         )
+        # Clean up the temporary directory before exiting
+        shutil.rmtree(temp_dir, ignore_errors=True)
         sys.exit(1)
     except Exception as e:
         logging.exception(f"An unexpected error occurred during PDF generation: {e}")
+        # pdf_generation_successful remains False
     finally:
-        # 5. Clean up temporary files from CWD
-        if final_page_paths:  # Only attempt cleanup if final temporary files were intended to be generated
-            if pdf_generation_successful:
-                logging.info("Cleaning up temporary files from CWD...")
-                for temp_file_path in final_page_paths:
-                    try:
-                        # Only delete files that actually exist and match the expected pattern
-                        if (
-                            temp_file_path.is_file()
-                            and temp_file_path.name.startswith(TEMP_FINAL_PAGE_PREFIX)
-                            and temp_file_path.suffix.lower()
-                            == f".{TEMP_IMAGE_EXTENSION}".lower()
-                        ):
-                            temp_file_path.unlink()  # Delete the file
-                            logging.debug(f"Deleted temporary file: {temp_file_path}")
-                        elif temp_file_path.is_file():
-                            # Log if a file in the list exists but doesn't match the pattern (shouldn't happen with this logic)
-                            logging.warning(
-                                f"Temporary file '{temp_file_path}' found but doesn't match cleanup pattern. Skipping deletion."
-                            )
-                        else:
-                            # Log if a file in the list wasn't found (might happen if a previous step failed)
-                            logging.debug(
-                                f"Temporary file '{temp_file_path}' not found for deletion."
-                            )
-                    except OSError as e:
-                        logging.error(
-                            f"Error deleting temporary file '{temp_file_path}': {e}"
-                        )
-                logging.info("Temporary files cleaned.")
-            else:
-                # If PDF generation failed, temporary files are intentionally left for debugging.
-                logging.warning(
-                    f"PDF generation failed. Temporary files retained in '{cwd}' for debugging."
+        # 6. Clean up the temporary directory
+        # Now, we check pdf_generation_successful to decide whether to clean up.
+        if pdf_generation_successful:
+            logging.info(f"Cleaning up temporary directory: '{temp_dir}'...")
+            try:
+                shutil.rmtree(temp_dir)
+                logging.info("Temporary directory cleaned.")
+            except OSError as e:
+                logging.error(
+                    f"Error cleaning up temporary directory '{temp_dir}': {e}"
                 )
-        # Also clean up any intermediate raw combined files that might be left due to errors before annotation
-        # These are the files generated by the first append step.
-        logging.debug(
-            "Attempting to clean up any remaining intermediate raw combined files..."
-        )
-        for item in cwd.glob(f"{TEMP_RAW_COMBINED_PREFIX}*.{TEMP_IMAGE_EXTENSION}"):
-            if item.is_file():
-                try:
-                    item.unlink()
-                    logging.debug(
-                        f"Cleaned up remaining intermediate raw combined file: {item}"
-                    )
-                except OSError as e:
-                    logging.error(
-                        f"Error cleaning up remaining intermediate raw combined file '{item}': {e}"
-                    )
+        else:
+            # If PDF generation failed, temporary files are intentionally left for debugging.
+            logging.warning(
+                f"PDF generation failed. Temporary directory retained: '{temp_dir}' for debugging."
+            )
 
 
 # --- Argument Parsing ---
@@ -477,14 +481,14 @@ def parse_arguments() -> argparse.Namespace:
     argparse.Namespace
         An object containing the parsed arguments.
     """
-    # Fix: Declare global IMAGE_QUALITY before its first use in this function
+    # Declare global IMAGE_QUALITY before its first use in this function
     global IMAGE_QUALITY
 
     parser = argparse.ArgumentParser(
         description="Generate a side-by-side PDF comparison of ungraded and graded JPG images "
         "with text labels, using ImageMagick. Applies quality reduction during temporary "
         "file creation to reduce their size, which may alter original color information. "
-        "Temporary files are created in the current working directory (CWD)."
+        "Temporary files are created in a unique subdirectory within the system's temporary directory."
     )
     parser.add_argument(
         "--ungraded-dir",
@@ -577,11 +581,26 @@ def main() -> None:
         logging.info("Script finished successfully.")
     except SystemExit as e:
         # SystemExit is raised intentionally for controlled exits due to errors
+        # The cleanup logic in process_images_to_pdf's finally block handles temp dir cleanup
+        # based on the pdf_generation_successful flag.
         logging.error(f"Script exited due to an error: {e.code}")
         sys.exit(e.code)
     except Exception as e:
         # Catch any other unexpected exceptions
         logging.exception(f"An unhandled error occurred during script execution: {e}")
+        # In case of an unhandled exception outside process_images_to_pdf,
+        # the temp dir might not have been cleaned. A basic cleanup attempt here.
+        # This is a fallback; the finally block in process_images_to_pdf is the primary handler.
+        try:
+            temp_dir = Path(tempfile.gettempdir()) / f"{TEMP_DIR_PREFIX}{os.getpid()}"
+            if temp_dir.exists():
+                logging.warning(
+                    f"Attempting fallback cleanup of temporary directory: '{temp_dir}'"
+                )
+                shutil.rmtree(temp_dir, ignore_errors=True)
+        except Exception as cleanup_e:
+            logging.error(f"Fallback cleanup failed: {cleanup_e}")
+
         sys.exit(1)
 
 
